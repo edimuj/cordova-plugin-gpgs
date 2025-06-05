@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin
+        id="cordova-plugin-gpgs"
+        version="0.0.1"
+        xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+>
+    <name>cordova-plugin-gpgs</name>
+    <description>Modern Cordova plugin for Google Play Games Services v2 API with comprehensive gaming features</description>
+    <license>GPL-3.0-or-later</license>
+    <author>Exelerus AB (https://exelerus.com)</author>
+    <js-module src="www/gpgs.js" name="GPGS">
+        <clobbers target="cordova.plugins.GPGS" />
+    </js-module>
+
+    <engines>
+        <engine name="cordova" version=">=12.0.0" />
+        <engine name="cordova-android" version=">=14.0.0" />
+    </engines>
+
+    <platform name="android">
+        <preference name="APP_ID" />
+        <preference name="PLAY_SERVICES_VERSION" default="23.2.0" />
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="GPGS">
+                <param name="android-package" value="com.exelerus.cordova.plugin.GPGS"/>
+            </feature>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data
+              android:name="com.google.android.gms.games.APP_ID"
+              android:value="@string/app_id" />
+            <meta-data
+              android:name="com.google.android.gms.version"
+              android:value="@integer/google_play_services_version" />
+        </config-file>
+
+        <config-file target="res/values/strings.xml" parent="/resources">
+            <string name="app_id">$APP_ID</string>
+        </config-file>
+
+        <framework src="com.google.android.gms:play-services-games-v2:+" />
+
+        <source-file src="src/android/GPGS.java"
+                     target-dir="src/com/exelerus/cordova/plugin" />
+
+    </platform>
+</plugin>

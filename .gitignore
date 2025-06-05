@@ -1,0 +1,56 @@
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Node.js dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build and temporary files
+*.log
+*.tmp
+*.temp
+build/
+dist/
+platforms/
+plugins/
+
+# Android specific
+.gradle/
+local.properties
+*.iml
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# Cordova specific
+.cordova/
+hooks/
+config.xml
+res/
+www/
+!www/index.html
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Debug files
+debug.log
+debug/ 

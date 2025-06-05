@@ -1,0 +1,50 @@
+{
+  "name": "cordova-plugin-gpgs",
+  "version": "0.0.5",
+  "description": "Modern Cordova plugin for Google Play Games Services v2 API with comprehensive gaming features",
+  "main": "./www/gpgs.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edimuj/cordova-plugin-gpgs"
+  },
+  "keywords": [
+    "cordova",
+    "ecosystem:cordova",
+    "cordova-android",
+    "google-play-games",
+    "play-games",
+    "games",
+    "leaderboard",
+    "achievements",
+    "cloud-save",
+    "friends",
+    "player-stats",
+    "events"
+  ],
+  "author": {
+    "name": "Exelerus AB",
+    "email": "support@exelerus.com",
+    "url": "https://exelerus.com"
+  },
+  "contributors": [
+    {
+      "name": "Edin Mujkanovic",
+      "email": "edin@exelerus.com"
+    }
+  ],
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/edimuj/cordova-plugin-gpgs/issues"
+  },
+  "homepage": "https://github.com/edimuj/cordova-plugin-gpgs#readme",
+  "engines": {
+    "cordova": ">=12.0.0",
+    "cordova-android": ">=14.0.0"
+  },
+  "cordova": {
+    "id": "cordova-plugin-gpgs",
+    "platforms": [
+      "android"
+    ]
+  }
+}
