@@ -536,19 +536,6 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Reveal an achievement
-     * Note: This is a fire-and-forget operation in v2.
-     */
-    private void revealAchievementAction(String achievementId, final CallbackContext callbackContext) {
-        cordova.getActivity().runOnUiThread(new Runnable() {
-            public void run() {
-                PlayGames.getAchievementsClient(cordova.getActivity()).reveal(achievementId);
-                callbackContext.success();
-            }
-        });
-    }
-
-    /**
      * Show achievements
      */
     private void showAchievementsAction(final CallbackContext callbackContext) {
@@ -570,6 +557,19 @@ public class GPGS extends CordovaPlugin {
                             callbackContext.error("Error showing achievements: " + e.getMessage());
                         }
                     });
+            }
+        });
+    }
+
+    /**
+     * Reveal an achievement
+     * Note: This is a fire-and-forget operation in v2.
+     */
+    private void revealAchievementAction(String achievementId, final CallbackContext callbackContext) {
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            public void run() {
+                PlayGames.getAchievementsClient(cordova.getActivity()).reveal(achievementId);
+                callbackContext.success();
             }
         });
     }
