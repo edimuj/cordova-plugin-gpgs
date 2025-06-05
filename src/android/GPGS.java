@@ -19,11 +19,7 @@
 package com.exelerus.cordova.plugin;
 
 import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.IntentSender;
-import android.graphics.Bitmap;
-import android.graphics.BitmapDrawable;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -75,8 +71,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Google Play Games Services Plugin for Cordova
@@ -509,9 +503,8 @@ public class GPGS extends CordovaPlugin {
 
     /**
      * Unlock an achievement using v2 API.
-     * Uses the modern Achievements client with proper success/failure callbacks.
-     * 
-     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
+     * Uses the modern Achievements client.
+     * Note: This is a fire-and-forget operation in v2.
      */
     private void unlockAchievementAction(String achievementId, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
