@@ -47,10 +47,9 @@
             <string name="app_id">$APP_ID</string>
         </config-file>
 
-        <!-- Google Play Games Services v2 API -->
-        <!-- While this plugin uses the v2 API, some clients (like PlayerStatsClient) still reside in the original 'play-services-games' library. -->
-        <!-- This is a known requirement for using the full feature set of the Google Play Games Services. -->
-        <framework src="com.google.android.gms:play-services-games-v2:+" />
+        <!-- Google Play Games Services -->
+        <!-- The main 'play-services-games' library now includes the v2 sign-in APIs. -->
+        <!-- The 'play-services-games-v2' artifact is no longer needed and conflicts with it. -->
         <framework src="com.google.android.gms:play-services-games:+" />
         <framework src="com.google.android.gms:play-services-auth:+" />
 
