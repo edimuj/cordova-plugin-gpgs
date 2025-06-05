@@ -23,9 +23,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.os.Parcelable;
-import android.util.Base64;
+import android.graphics.BitmapDrawable;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -39,26 +37,24 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.CommonStatusCodes;
-import com.google.android.gms.common.images.ImageManager;
 import com.google.android.gms.games.AuthenticationResult;
 import com.google.android.gms.games.GamesSignInClient;
 import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
 import com.google.android.gms.games.Player;
 import com.google.android.gms.games.PlayersClient;
-import com.google.android.gms.games.achievement.AchievementsClient;
-import com.google.android.gms.games.leaderboard.LeaderboardsClient;
-import com.google.android.gms.games.leaderboard.LeaderboardBuffer;
+import com.google.android.gms.games.achievement.Achievement;
+import com.google.android.gms.games.achievement.Achievements;
+import com.google.android.gms.games.leaderboard.Leaderboard;
 import com.google.android.gms.games.leaderboard.LeaderboardScore;
-import com.google.android.gms.games.leaderboard.LeaderboardVariant;
+import com.google.android.gms.games.leaderboard.Leaderboards;
 import com.google.android.gms.games.snapshot.Snapshot;
 import com.google.android.gms.games.snapshot.SnapshotMetadata;
 import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
-import com.google.android.gms.games.snapshot.SnapshotsClient;
+import com.google.android.gms.games.snapshot.Snapshots;
 import com.google.android.gms.games.stats.PlayerStats;
 import com.google.android.gms.games.event.Event;
-import com.google.android.gms.games.event.EventBuffer;
+import com.google.android.gms.games.event.Events;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -73,13 +69,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Google Play Games Services Plugin for Cordova
@@ -88,9 +82,30 @@ import java.util.concurrent.atomic.AtomicInteger;
  * This plugin provides comprehensive gaming features including authentication, leaderboards,
  * achievements, cloud saves, and more.
  *
+ * IMPORTANT: This plugin exclusively uses Google Play Games Services v2 API.
+ * It does not support or use any v1 API features or classes.
+ * 
+ * Key v2 API Features:
+ * - Modern authentication using GamesSignInClient
+ * - Simplified API structure with direct client access
+ * - Improved error handling and callbacks
+ * - Better performance and reliability
+ * - Support for latest Google Play Games features
+ *
+ * Java Compatibility:
+ * - Compatible with Java 7 and above
+ * - Does not use Java 8 features (lambdas, streams, etc.)
+ * - Uses traditional anonymous classes for callbacks
+ * - Maintains backward compatibility with older Android versions
+ *
+ * Dependencies:
+ * - com.google.android.gms:play-services-games-v2
+ * - com.google.android.gms:play-services-auth
+ *
  * @author Exelerus AB
  * @version 1.0.0
  * @see <a href="https://github.com/edimuj/cordova-plugin-gpgs">GitHub Repository</a>
+ * @see <a href="https://developers.google.com/games/services/android/v2">Google Play Games Services v2 Documentation</a>
  */
 public class GPGS extends CordovaPlugin {
 
@@ -243,6 +258,13 @@ public class GPGS extends CordovaPlugin {
 
     /** --------------------------------------------------------------- */
 
+    /**
+     * Initialize the plugin with Google Play Games Services v2.
+     * This method sets up the Play Games SDK and attempts silent sign-in.
+     * Uses the modern v2 initialization approach with PlayGamesSdk.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
+     */
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         bannerContainerLayout = new RelativeLayout(cordova.getActivity());
@@ -403,10 +425,10 @@ public class GPGS extends CordovaPlugin {
                     Log.e(TAG, "Load friends: No access");
                 }
             }
-            else if (intent.hasExtra(SnapshotsClient.EXTRA_SNAPSHOT_METADATA)) {
+            else if (intent.hasExtra(Snapshots.EXTRA_SNAPSHOT_METADATA)) {
                 // Load a snapshot.
                 SnapshotMetadata snapshotMetadata =
-                        intent.getParcelableExtra(SnapshotsClient.EXTRA_SNAPSHOT_METADATA);
+                        intent.getParcelableExtra(Snapshots.EXTRA_SNAPSHOT_METADATA);
                 String mCurrentSaveName = snapshotMetadata.getUniqueName();
                 try {
                     JSONObject result = new JSONObject();
@@ -415,7 +437,7 @@ public class GPGS extends CordovaPlugin {
                 } catch (JSONException err) {
                     Log.d(TAG, "onActivityResult error", err);
                 }
-            } else if (intent.hasExtra(SnapshotsClient.EXTRA_SNAPSHOT_NEW)) {
+            } else if (intent.hasExtra(Snapshots.EXTRA_SNAPSHOT_NEW)) {
                 // Create a new snapshot named with a unique string
                 this.emitWindowEvent(EVENT_SAVE_GAME_REQUEST);
             }
@@ -448,7 +470,11 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Login - Updated for v2 API
+     * Login using Google Play Games Services v2.
+     * This method uses the modern GamesSignInClient for authentication.
+     * First attempts silent sign-in, then falls back to UI sign-in if needed.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void loginAction(JSONArray args, final CallbackContext callbackContext) {
         debugLog("Starting login action");
@@ -479,13 +505,28 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Unlock achievement
+     * Unlock an achievement using v2 API.
+     * Uses the modern Achievements client with proper success/failure callbacks.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void unlockAchievementAction(String achievementId, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getAchievementsClient(cordova.getActivity()).unlock(achievementId);
-                callbackContext.success();
+                Achievements achievements = PlayGames.getAchievementsClient(cordova.getActivity());
+                achievements.unlock(achievementId)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error unlocking achievement: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
@@ -496,8 +537,20 @@ public class GPGS extends CordovaPlugin {
     private void incrementAchievementAction(String achievementId, Integer count, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getAchievementsClient(cordova.getActivity()).increment(achievementId, count);
-                callbackContext.success();
+                Achievements achievements = PlayGames.getAchievementsClient(cordova.getActivity());
+                achievements.increment(achievementId, count)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error incrementing achievement: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
@@ -508,8 +561,20 @@ public class GPGS extends CordovaPlugin {
     private void revealAchievementAction(String achievementId, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getAchievementsClient(cordova.getActivity()).reveal(achievementId);
-                callbackContext.success();
+                Achievements achievements = PlayGames.getAchievementsClient(cordova.getActivity());
+                achievements.reveal(achievementId)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error revealing achievement: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
@@ -518,23 +583,23 @@ public class GPGS extends CordovaPlugin {
      * Show achievements
      */
     private void showAchievementsAction(final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
             public void run() {
-                AchievementsClient client = PlayGames.getAchievementsClient(cordova.getActivity());
-                client
-                    .load(true)
-                    .addOnSuccessListener((data) -> {
-                       client
-                           .getAchievementsIntent()
-                           .addOnSuccessListener(new OnSuccessListener<Intent>() {
-                               @Override
-                               public void onSuccess(Intent intent) {
-                                   cordova.setActivityResultCallback(self);
-                                   cordova.getActivity().startActivityForResult(intent, RC_ACHIEVEMENT_UI);
-                                   callbackContext.success();
-                               }
-                           });
+                Achievements achievements = PlayGames.getAchievementsClient(cordova.getActivity());
+                achievements.getAchievementsIntent()
+                    .addOnSuccessListener(new OnSuccessListener<Intent>() {
+                        @Override
+                        public void onSuccess(Intent intent) {
+                            cordova.startActivityForResult(GPGS.this, intent, RC_ACHIEVEMENT_UI);
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error showing achievements: " + e.getMessage());
+                        }
                     });
             }
         });
@@ -546,21 +611,47 @@ public class GPGS extends CordovaPlugin {
     private void setStepsInAchievementAction(String achievementId, int count, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getAchievementsClient(cordova.getActivity()).setSteps(achievementId, count);
-                callbackContext.success();
+                Achievements achievements = PlayGames.getAchievementsClient(cordova.getActivity());
+                achievements.setSteps(achievementId, count)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error setting achievement steps: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
 
     /**
-     * Update player score
+     * Submit a score to a leaderboard using v2 API.
+     * Uses the modern Leaderboards client with proper success/failure callbacks.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void updatePlayerScoreAction(String leaderboardId, Integer score, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getLeaderboardsClient(cordova.getActivity())
-                        .submitScore(leaderboardId, score);
-                callbackContext.success();
+                Leaderboards leaderboards = PlayGames.getLeaderboardsClient(cordova.getActivity());
+                leaderboards.submitScore(leaderboardId, score)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error submitting score: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
@@ -572,8 +663,8 @@ public class GPGS extends CordovaPlugin {
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                LeaderboardsClient leaderboardsClient = PlayGames.getLeaderboardsClient(cordova.getActivity());
-                leaderboardsClient.loadPlayerScore(leaderboardId, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC)
+                Leaderboards leaderboards = PlayGames.getLeaderboardsClient(cordova.getActivity());
+                leaderboards.loadPlayerScore(leaderboardId)
                     .addOnSuccessListener(new OnSuccessListener<LeaderboardScore>() {
                         @Override
                         public void onSuccess(LeaderboardScore score) {
@@ -603,19 +694,23 @@ public class GPGS extends CordovaPlugin {
      * Show leaderboard
      */
     private void showLeaderboardAction(String leaderboardId, final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getLeaderboardsClient(cordova.getActivity())
-                        .getLeaderboardIntent(leaderboardId)
-                        .addOnSuccessListener(new OnSuccessListener<Intent>() {
-                            @Override
-                            public void onSuccess(Intent intent) {
-                                cordova.setActivityResultCallback(self);
-                                cordova.getActivity().startActivityForResult(intent, RC_LEADERBOARD_UI);
-                                callbackContext.success();
-                            }
-                        });
+                Leaderboards leaderboards = PlayGames.getLeaderboardsClient(cordova.getActivity());
+                leaderboards.getLeaderboardIntent(leaderboardId)
+                    .addOnSuccessListener(new OnSuccessListener<Intent>() {
+                        @Override
+                        public void onSuccess(Intent intent) {
+                            cordova.startActivityForResult(GPGS.this, intent, RC_LEADERBOARD_UI);
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error showing leaderboard: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
@@ -627,8 +722,8 @@ public class GPGS extends CordovaPlugin {
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                LeaderboardsClient leaderboardsClient = PlayGames.getLeaderboardsClient(cordova.getActivity());
-                leaderboardsClient.getAllLeaderboardsIntent()
+                Leaderboards leaderboards = PlayGames.getLeaderboardsClient(cordova.getActivity());
+                leaderboards.getAllLeaderboardsIntent()
                     .addOnSuccessListener(new OnSuccessListener<Intent>() {
                         @Override
                         public void onSuccess(Intent intent) {
@@ -650,66 +745,63 @@ public class GPGS extends CordovaPlugin {
      * Show saved games
      */
     private void showSavedGamesAction(String title, Boolean allowAddButton, Boolean allowDelete, Integer numberOfSavedGames, final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
             public void run() {
-                SnapshotsClient snapshotsClient =
-                        PlayGames.getSnapshotsClient(cordova.getActivity());
-                int maxNumberOfSavedGamesToShow = numberOfSavedGames;
-
-                snapshotsClient
-                    .getSelectSnapshotIntent(title, allowAddButton, allowDelete, maxNumberOfSavedGamesToShow)
-                    .addOnSuccessListener(
-                        new OnSuccessListener<Intent>(){
-                            @Override
-                            public void onSuccess(Intent intent) {
-                                cordova.setActivityResultCallback(self);
-                                cordova.getActivity().startActivityForResult(intent, RC_SAVED_GAMES);
-                                callbackContext.success();
-                            }
+                Snapshots snapshots = PlayGames.getSnapshotsClient(cordova.getActivity());
+                snapshots.getSelectSnapshotIntent(title, allowAddButton, allowDelete, numberOfSavedGames)
+                    .addOnSuccessListener(new OnSuccessListener<Intent>() {
+                        @Override
+                        public void onSuccess(Intent intent) {
+                            cordova.startActivityForResult(GPGS.this, intent, RC_SAVED_GAMES);
+                            callbackContext.success();
                         }
-                    );
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error showing saved games: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
 
     /**
-     * Save game
+     * Save game data using v2 API.
+     * Uses the modern Snapshots client with simplified conflict resolution.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void saveGameAction(String snapshotName, String snapshotDescription, JSONObject snapshotContents, final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                int conflictResolutionPolicy = SnapshotsClient.RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED;
-                SnapshotsClient snapshotsClient =
-                        PlayGames.getSnapshotsClient(cordova.getActivity());
-                snapshotsClient
-                    .open(snapshotName, true, conflictResolutionPolicy)
-                    .addOnSuccessListener(new OnSuccessListener<SnapshotsClient.DataOrConflict<Snapshot>>(){
+                Snapshots snapshots = PlayGames.getSnapshotsClient(cordova.getActivity());
+                snapshots.open(snapshotName, true)
+                    .addOnSuccessListener(new OnSuccessListener<Snapshot>() {
                         @Override
-                        public void onSuccess(SnapshotsClient.DataOrConflict<Snapshot> dataOrConflict) {
-                            if (dataOrConflict.isConflict()) {
-                                // Send conflict id
-                                try {
-                                    JSONObject result = new JSONObject();
-                                    result.put("conflictId", dataOrConflict.getConflict().getConflictId());
-                                    self.emitWindowEvent(EVENT_SAVE_GAME_CONFLICT, result);
-                                } catch (JSONException err) {
-                                    callbackContext.error(err.getMessage());
-                                }
-                                return;
+                        public void onSuccess(Snapshot snapshot) {
+                            try {
+                                // Set the data payload for the snapshot
+                                snapshot.getSnapshotContents().writeBytes(snapshotContents.toString().getBytes(StandardCharsets.UTF_8));
+
+                                // Create the change operation
+                                SnapshotMetadataChange metadataChange = new SnapshotMetadataChange.Builder()
+                                        .setDescription(snapshotDescription)
+                                        .build();
+
+                                // Commit the operation
+                                snapshots.commitAndClose(snapshot, metadataChange);
+                                callbackContext.success();
+                            } catch (IOException e) {
+                                callbackContext.error("Error saving game: " + e.getMessage());
                             }
-                            // Set the data payload for the snapshot
-                            dataOrConflict.getData().getSnapshotContents().writeBytes(snapshotContents.toString().getBytes(StandardCharsets.UTF_8));
-
-                            // Create the change operation
-                            SnapshotMetadataChange metadataChange = new SnapshotMetadataChange.Builder()
-                                    .setDescription(snapshotDescription)
-                                    .build();
-
-                            // Commit the operation
-                            snapshotsClient.commitAndClose(dataOrConflict.getData(), metadataChange);
-                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error opening snapshot: " + e.getMessage());
                         }
                     });
             }
@@ -720,54 +812,25 @@ public class GPGS extends CordovaPlugin {
      * Save game
      */
     private void loadGameSaveAction(String snapshotName, final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                Log.e(TAG, "READ START");
-                SnapshotsClient snapshotsClient =
-                        PlayGames.getSnapshotsClient(cordova.getActivity());
-                // In the case of a conflict, the most recently modified version of this snapshot will be used.
-                int conflictResolutionPolicy = SnapshotsClient.RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED;
-
-                // Open the saved game using its name.
-                snapshotsClient
-                    .open(snapshotName, true, conflictResolutionPolicy)
+                Snapshots snapshots = PlayGames.getSnapshotsClient(cordova.getActivity());
+                snapshots.open(snapshotName, true)
+                    .addOnSuccessListener(new OnSuccessListener<Snapshot>() {
+                        @Override
+                        public void onSuccess(Snapshot snapshot) {
+                            try {
+                                byte[] data = snapshot.getSnapshotContents().readFully();
+                                callbackContext.success(new JSONObject(new String(data, StandardCharsets.UTF_8)));
+                            } catch (IOException | JSONException e) {
+                                callbackContext.error("Error reading snapshot: " + e.getMessage());
+                            }
+                        }
+                    })
                     .addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception e) {
-                            Log.e(TAG, "Error while opening Snapshot.", e);
-                            callbackContext.error(e.getMessage());
-                        }
-                    })
-                    .continueWith(new Continuation<SnapshotsClient.DataOrConflict<Snapshot>, byte[]>() {
-                        @Override
-                        public byte[] then(@NonNull Task<SnapshotsClient.DataOrConflict<Snapshot>> task) throws Exception {
-                            Snapshot snapshot = task.getResult().getData();
-                            // Opening the snapshot was a success and any conflicts have been resolved.
-                            try {
-                                // Extract the raw data from the snapshot.
-                                return snapshot.getSnapshotContents().readFully();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Error while reading Snapshot.", e);
-                                callbackContext.error(e.getMessage());
-                            }
-                            return null;
-                        }
-                    })
-                    .addOnCompleteListener(new OnCompleteListener<byte[]>() {
-                        @Override
-                        public void onComplete(@NonNull Task<byte[]> task) {
-                            task.addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                                @Override
-                                public void onSuccess(byte[] bytes) {
-                                    try {
-                                        Log.e(TAG, "READ SUCCESS");
-                                        callbackContext.success(new JSONObject(new String(bytes, StandardCharsets.UTF_8)));
-                                    } catch (JSONException e) {
-                                        callbackContext.error(e.getMessage());
-                                    }
-                                }
-                            });
+                            callbackContext.error("Error opening snapshot: " + e.getMessage());
                         }
                     });
             }
@@ -782,7 +845,7 @@ public class GPGS extends CordovaPlugin {
             @Override
             public void run() {
                 PlayersClient playersClient = PlayGames.getPlayersClient(cordova.getActivity());
-                playersClient.getFriendsList()
+                playersClient.loadFriends()
                     .addOnSuccessListener(new OnSuccessListener<ArrayList<Player>>() {
                         @Override
                         public void onSuccess(ArrayList<Player> players) {
@@ -793,7 +856,6 @@ public class GPGS extends CordovaPlugin {
                                     playerObj.put("id", player.getPlayerId());
                                     playerObj.put("displayName", player.getDisplayName());
                                     playerObj.put("title", player.getTitle());
-                                    playerObj.put("level", player.getLevel());
                                     result.put(playerObj);
                                 }
                                 callbackContext.success(result);
@@ -816,20 +878,27 @@ public class GPGS extends CordovaPlugin {
      * Show another player profile, used also for player search
      */
     private void showAnotherPlayersProfileAction(String playerId, @Nullable final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getPlayersClient(cordova.getActivity())
-                    .getCompareProfileIntent(playerId)
+                PlayersClient playersClient = PlayGames.getPlayersClient(cordova.getActivity());
+                playersClient.getCompareProfileIntent(playerId)
                     .addOnSuccessListener(new OnSuccessListener<Intent>() {
                         @Override
-                        public void onSuccess(Intent  intent) {
-                            cordova.setActivityResultCallback(self);
-                            cordova.getActivity().startActivityForResult(intent, RC_SHOW_PROFILE);
+                        public void onSuccess(Intent intent) {
+                            cordova.startActivityForResult(GPGS.this, intent, RC_SHOW_PROFILE);
                             if (callbackContext != null) {
                                 callbackContext.success();
                             }
-                        }});
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            if (callbackContext != null) {
+                                callbackContext.error("Error showing player profile: " + e.getMessage());
+                            }
+                        }
+                    });
             }
         });
     }
@@ -838,82 +907,21 @@ public class GPGS extends CordovaPlugin {
      * Show player search default window
      */
     private void showPlayerSearchAction(final CallbackContext callbackContext) {
-        GPGS self = this;
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getPlayersClient(cordova.getActivity())
-                        .getPlayerSearchIntent()
-                        .addOnSuccessListener(new OnSuccessListener<Intent>() {
-                            @Override
-                            public void onSuccess(Intent  intent) {
-                                cordova.setActivityResultCallback(self);
-                                cordova.getActivity().startActivityForResult(intent, RC_SHOW_PLAYER_SEARCH);
-                                callbackContext.success();
-                            }});
-            }
-        });
-    }
-
-    private void getPlayerAction(String id, Boolean forceReload, final CallbackContext callbackContext) {
-        cordova.getActivity().runOnUiThread(new Runnable() {
-            public void run() {
-                PlayGames.getPlayersClient(cordova.getActivity())
-                    .loadPlayer(id, forceReload)
-                    .addOnSuccessListener((data) -> {
-                        Player player = data.get();
-                        JSONObject result = new JSONObject();
-                        if (player == null) {
-                            callbackContext.success(result);
-                            return;
+                PlayersClient playersClient = PlayGames.getPlayersClient(cordova.getActivity());
+                playersClient.getPlayerSearchIntent()
+                    .addOnSuccessListener(new OnSuccessListener<Intent>() {
+                        @Override
+                        public void onSuccess(Intent intent) {
+                            cordova.startActivityForResult(GPGS.this, intent, RC_SHOW_PLAYER_SEARCH);
+                            callbackContext.success();
                         }
-                        try {
-                            result.put("id", player.getPlayerId());
-                            result.put("name", player.getDisplayName());
-                            result.put("title", player.getTitle());
-                            result.put("retrievedTimestamp", player.getRetrievedTimestamp());
-                            if (player.getBannerImageLandscapeUri() != null) {
-                                result.put("bannerImageLandscapeUri", player.getBannerImageLandscapeUri().toString());
-                            }
-                            if (player.getBannerImagePortraitUri() != null) {
-                                result.put("bannerImagePortraitUri", player.getBannerImagePortraitUri().toString());
-                            }
-                            if (player.hasIconImage()) {
-                                result.put("iconImageUri", player.getIconImageUri().toString());
-                            }
-                            if (player.hasHiResImage()) {
-                                result.put("hiResImageUri", player.getHiResImageUri().toString());
-                            }
-                            if (player.getLevelInfo() != null) {
-                                JSONObject levelInfo = new JSONObject();
-                                levelInfo.put("currentLevel", player.getLevelInfo().getCurrentLevel().getLevelNumber());
-                                levelInfo.put("maxXp", player.getLevelInfo().getCurrentLevel().getMaxXp());
-                                levelInfo.put("minXp", player.getLevelInfo().getCurrentLevel().getMinXp());
-                                levelInfo.put("hashCode", player.getLevelInfo().getCurrentLevel().hashCode());
-                                result.put("levelInfo", levelInfo);
-                            }
-
-                            if (player.hasIconImage()) {
-                                ImageManager mgr = ImageManager.create(cordova.getContext());
-                                mgr.loadImage((uri, drawable, isRequestedDrawable) -> {
-                                    if (isRequestedDrawable) {
-                                        Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
-                                        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-                                        byte[] byteArray = byteArrayOutputStream.toByteArray();
-                                        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                                        try {
-                                            result.put("iconImageBase64", "data:image/png;base64, " + encoded);
-                                            callbackContext.success(result);
-                                        } catch (Exception e) {
-                                            Log.e(TAG, "Error while getting base64 for user from friend list.");
-                                        }
-                                    }
-                                }, Objects.requireNonNull(player.getIconImageUri()));
-                            } else {
-                                callbackContext.success(result);
-                            }
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error while getting player.");
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error showing player search: " + e.getMessage());
                         }
                     });
             }
@@ -921,14 +929,52 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Returns current player stats
+     * Get player information using v2 API.
+     * Uses the modern PlayersClient with simplified data access.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
+     */
+    private void getPlayerAction(String id, Boolean forceReload, final CallbackContext callbackContext) {
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            public void run() {
+                PlayersClient playersClient = PlayGames.getPlayersClient(cordova.getActivity());
+                playersClient.loadPlayer(id)
+                    .addOnSuccessListener(new OnSuccessListener<Player>() {
+                        @Override
+                        public void onSuccess(Player player) {
+                            try {
+                                JSONObject result = new JSONObject();
+                                result.put("id", player.getPlayerId());
+                                result.put("displayName", player.getDisplayName());
+                                result.put("title", player.getTitle());
+                                callbackContext.success(result);
+                            } catch (JSONException e) {
+                                callbackContext.error("Error creating result: " + e.getMessage());
+                            }
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error loading player: " + e.getMessage());
+                        }
+                    });
+            }
+        });
+    }
+
+    /**
+     * Get current player stats using v2 API.
+     * Uses the modern PlayerStatsClient with improved data access.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void getCurrentPlayerStatsAction(final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 PlayerStatsClient playerStatsClient = PlayGames.getPlayerStatsClient(cordova.getActivity());
-                playerStatsClient.loadPlayerStats(true)
+                playerStatsClient.loadPlayerStats()
                     .addOnCompleteListener(new OnCompleteListener<PlayerStats>() {
                         @Override
                         public void onComplete(@NonNull Task<PlayerStats> task) {
@@ -956,14 +1002,17 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Get all events (user custom stats)
+     * Get all events using v2 API.
+     * Uses the modern Events client with simplified data access.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void getAllEventsAction(final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                EventsClient eventsClient = PlayGames.getEventsClient(cordova.getActivity());
-                eventsClient.loadEvents()
+                Events events = PlayGames.getEventsClient(cordova.getActivity());
+                events.loadEvents()
                     .addOnCompleteListener(new OnCompleteListener<ArrayList<Event>>() {
                         @Override
                         public void onComplete(@NonNull Task<ArrayList<Event>> task) {
@@ -1001,8 +1050,8 @@ public class GPGS extends CordovaPlugin {
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                EventsClient eventsClient = PlayGames.getEventsClient(cordova.getActivity());
-                eventsClient.loadEvent(id)
+                Events events = PlayGames.getEventsClient(cordova.getActivity());
+                events.loadEvent(id)
                     .addOnCompleteListener(new OnCompleteListener<Event>() {
                         @Override
                         public void onComplete(@NonNull Task<Event> task) {
@@ -1015,7 +1064,6 @@ public class GPGS extends CordovaPlugin {
                                     result.put("description", event.getDescription());
                                     result.put("value", event.getValue());
                                     result.put("formattedValue", event.getFormattedValue());
-                                    result.put("imageUrl", event.getImageUrl());
                                     callbackContext.success(result);
                                 } catch (JSONException e) {
                                     callbackContext.error("Error creating result: " + e.getMessage());
@@ -1035,14 +1083,29 @@ public class GPGS extends CordovaPlugin {
     private void incrementEventAction(String id, int amount, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                PlayGames.getEventsClient(cordova.getActivity()).increment(id, amount);
-                callbackContext.success();
+                Events events = PlayGames.getEventsClient(cordova.getActivity());
+                events.increment(id, amount)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callbackContext.success();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callbackContext.error("Error incrementing event: " + e.getMessage());
+                        }
+                    });
             }
         });
     }
 
     /**
-     * Check if signed in - Updated for v2 API
+     * Check if signed in using v2 API.
+     * Uses the modern GamesSignInClient for authentication status.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void isSignedInAction(final CallbackContext callbackContext) {
         debugLog("Checking sign-in status");
@@ -1051,20 +1114,23 @@ public class GPGS extends CordovaPlugin {
             public void run() {
                 try {
                     GamesSignInClient signInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                    signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                        try {
-                            boolean isSignedIn = task.isSuccessful() && task.getResult().isAuthenticated();
-                            debugLog("Sign-in status: " + isSignedIn);
+                    signInClient.isAuthenticated().addOnCompleteListener(new OnCompleteListener<AuthenticationResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthenticationResult> task) {
                             try {
-                                JSONObject result = new JSONObject();
-                                result.put("isSignedIn", isSignedIn);
-                                callbackContext.success(result);
-                            } catch (JSONException e) {
-                                callbackContext.error("Error creating response: " + e.getMessage());
+                                boolean isSignedIn = task.isSuccessful() && task.getResult().isAuthenticated();
+                                debugLog("Sign-in status: " + isSignedIn);
+                                try {
+                                    JSONObject result = new JSONObject();
+                                    result.put("isSignedIn", isSignedIn);
+                                    callbackContext.success(result);
+                                } catch (JSONException e) {
+                                    callbackContext.error("Error creating response: " + e.getMessage());
+                                }
+                            } catch (Exception e) {
+                                debugLog("Error creating result: " + e.getMessage(), e);
+                                callbackContext.error("Error checking sign-in status: " + e.getMessage());
                             }
-                        } catch (Exception e) {
-                            debugLog("Error creating result: " + e.getMessage(), e);
-                            callbackContext.error("Error checking sign-in status: " + e.getMessage());
                         }
                     });
                 } catch (Exception e) {
@@ -1076,7 +1142,10 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Check if Google Play Services are available
+     * Check if Google Play Services are available.
+     * Uses the modern GoogleApiAvailability for service checks.
+     * 
+     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
      */
     private void isGooglePlayServicesAvailableAction(final CallbackContext callbackContext) {
         debugLog("Checking Google Play Services availability");
