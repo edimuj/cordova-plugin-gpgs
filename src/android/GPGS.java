@@ -1291,7 +1291,13 @@ public class GPGS extends CordovaPlugin {
                         try {
                             boolean isSignedIn = task.isSuccessful() && task.getResult().isAuthenticated();
                             debugLog("Sign-in status: " + isSignedIn);
-                            callbackContext.success(isSignedIn);
+                            try {
+                                JSONObject result = new JSONObject();
+                                result.put("isSignedIn", isSignedIn);
+                                callbackContext.success(result);
+                            } catch (JSONException e) {
+                                callbackContext.error("Error creating response: " + e.getMessage());
+                            }
                         } catch (Exception e) {
                             debugLog("Error creating result: " + e.getMessage(), e);
                             callbackContext.error("Error checking sign-in status: " + e.getMessage());
@@ -1321,7 +1327,13 @@ public class GPGS extends CordovaPlugin {
                     debugLog("Google Play Services availability: " + isAvailable + " (result code: " + resultCode + ")");
                     
                     if (isAvailable) {
-                        callbackContext.success(true);
+                        try {
+                            JSONObject result = new JSONObject();
+                            result.put("available", true);
+                            callbackContext.success(result);
+                        } catch (JSONException e) {
+                            callbackContext.error("Error creating response: " + e.getMessage());
+                        }
                     } else {
                         // If services are not available, we can provide more detailed information
                         JSONObject result = new JSONObject();
