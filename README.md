@@ -9,29 +9,45 @@ A modern Cordova plugin for Google Play Games Services v2 API with comprehensive
   - Background sign-out detection
   - Manual sign-in support
   - Sign-in state events
+  - Modern v2 authentication flow
 - **Leaderboards**
   - Submit scores
   - Show leaderboards
   - Get player scores
+  - Get player rankings
 - **Achievements**
   - Unlock achievements
   - Increment achievements
   - Show achievements UI
+  - Reveal hidden achievements
+  - Set achievement steps
 - **Cloud Saves**
   - Save game data
   - Load game data
   - Show saved games UI
+  - Conflict resolution
+  - Snapshot management
 - **Friends**
   - Get friends list
   - Show player profiles
   - Player search
+  - Compare profiles
 - **Player Stats**
   - Get player info
   - Get player stats
+  - Get player level info
 - **Events**
   - Increment events
   - Get event data
   - Get all events
+  - Event tracking
+- **Quests & Milestones**
+  - Track quest progress
+  - Manage milestones
+- **Challenges**
+  - Create challenges
+  - Accept challenges
+  - Track challenge progress
 
 ## Requirements
 
@@ -148,7 +164,8 @@ GPGS.getPlayerScore('leaderboard_id').then(score => {
 // Returns: Promise<{
 //   score: number,
 //   displayScore: string,
-//   scoreTag: string
+//   scoreTag: string,
+//   rank: number
 // }>
 ```
 
@@ -170,6 +187,18 @@ GPGS.incrementAchievement('achievement_id', 1).then(() => {
 // Show achievements UI
 GPGS.showAchievements().then(() => {
     console.log('Achievements UI shown');
+});
+// Returns: Promise<void>
+
+// Reveal a hidden achievement
+GPGS.revealAchievement('achievement_id').then(() => {
+    console.log('Achievement revealed');
+});
+// Returns: Promise<void>
+
+// Set achievement steps
+GPGS.setStepsInAchievement('achievement_id', 5).then(() => {
+    console.log('Achievement steps set');
 });
 // Returns: Promise<void>
 ```
@@ -250,24 +279,17 @@ GPGS.showPlayerSearch().then(() => {
 
 ```javascript
 // Get player info
-GPGS.getPlayerInfo().then(player => {
-    console.log('Player info:', player);
+GPGS.getPlayerInfo('player_id').then(info => {
+    console.log('Player info:', info);
 });
 // Returns: Promise<{
 //   id: string,
-//   name: string,
+//   displayName: string,
 //   title: string,
-//   retrievedTimestamp: number,
-//   bannerImageLandscapeUri?: string,
-//   bannerImagePortraitUri?: string,
-//   iconImageUri?: string,
-//   hiResImageUri?: string,
-//   iconImageBase64?: string,
 //   levelInfo?: {
 //     currentLevel: number,
 //     maxXp: number,
-//     minXp: number,
-//     hashCode: number
+//     minXp: number
 //   }
 // }>
 
@@ -281,7 +303,8 @@ GPGS.getPlayerStats().then(stats => {
 //   numberOfPurchases: number,
 //   numberOfSessions: number,
 //   sessionPercentile: number,
-//   spendPercentile: number
+//   spendPercentile: number,
+//   spendProbability: number
 // }>
 ```
 
@@ -302,26 +325,7 @@ GPGS.getAllEvents().then(events => {
 //   id: string,
 //   name: string,
 //   description: string,
-//   iconImageUri: string,
-//   formattedValue: string,
-//   value: number,
-//   player: {
-//     id: string,
-//     name: string,
-//     title: string,
-//     retrievedTimestamp: number,
-//     bannerImageLandscapeUri?: string,
-//     bannerImagePortraitUri?: string,
-//     iconImageUri?: string,
-//     hiResImageUri?: string,
-//     iconImageBase64?: string,
-//     levelInfo?: {
-//       currentLevel: number,
-//       maxXp: number,
-//       minXp: number,
-//       hashCode: number
-//     }
-//   }
+//   value: number
 // }>>
 
 // Get specific event
@@ -332,26 +336,7 @@ GPGS.getEvent('event_id').then(event => {
 //   id: string,
 //   name: string,
 //   description: string,
-//   iconImageUri: string,
-//   formattedValue: string,
-//   value: number,
-//   player: {
-//     id: string,
-//     name: string,
-//     title: string,
-//     retrievedTimestamp: number,
-//     bannerImageLandscapeUri?: string,
-//     bannerImagePortraitUri?: string,
-//     iconImageUri?: string,
-//     hiResImageUri?: string,
-//     iconImageBase64?: string,
-//     levelInfo?: {
-//       currentLevel: number,
-//       maxXp: number,
-//       minXp: number,
-//       hashCode: number
-//     }
-//   }
+//   value: number
 // }>
 ```
 
@@ -397,6 +382,10 @@ GPGS.login().catch(error => {
     console.error('Error:', error);
 });
 ```
+
+Common error codes:
+- `ERROR_CODE_HAS_RESOLUTION`: The error can be resolved by the user
+- `ERROR_CODE_NO_RESOLUTION`: The error cannot be resolved by the user
 
 ## Debug Mode
 

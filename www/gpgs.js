@@ -71,11 +71,11 @@ var GPGS = {
                 } 
                 // If result is an object, it contains error details
                 else if (typeof result === 'object' && result !== null) {
-                    resolve(result);
+                    resolve(result.isAvailable);
                 }
                 // Fallback to boolean conversion
                 else {
-                    resolve(!!result);
+                    resolve(result);
                 }
             }, reject, 'GPGS', 'isGooglePlayServicesAvailable', []);
         });
@@ -90,9 +90,9 @@ var GPGS = {
             exec(function(result) {
                 // Handle both object and boolean responses
                 if (typeof result === 'object' && result !== null) {
-                    resolve(!!result.isSignedIn);
+                    resolve(result.isSignedIn);
                 } else {
-                    resolve(!!result);
+                    resolve(result);
                 }
             }, reject, 'GPGS', 'isSignedIn', []);
         });
