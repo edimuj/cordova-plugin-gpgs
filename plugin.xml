@@ -50,6 +50,7 @@
         <!-- Google Play Games Services v2 API -->
         <framework src="com.google.android.gms:play-services-games-v2:+" />
         <framework src="com.google.android.gms:play-services-auth:+" />
+        <framework src="com.google.android.gms:play-services-stats:+" />
 
         <!-- Custom Gradle file to resolve dependency conflicts -->
         <framework src="src/android/gpgs.gradle" custom="true" type="gradleReference" />
