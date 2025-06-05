@@ -20,6 +20,7 @@ package com.exelerus.cordova.plugin;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.Intent;
 import android.content.IntentSender;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -29,6 +30,41 @@ import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.common.images.ImageManager;
+import com.google.android.gms.games.AuthenticationResult;
+import com.google.android.gms.games.GamesSignInClient;
+import com.google.android.gms.games.PlayGames;
+import com.google.android.gms.games.PlayGamesSdk;
+import com.google.android.gms.games.Player;
+import com.google.android.gms.games.PlayersClient;
+import com.google.android.gms.games.achievement.AchievementsClient;
+import com.google.android.gms.games.leaderboard.LeaderboardsClient;
+import com.google.android.gms.games.leaderboard.LeaderboardBuffer;
+import com.google.android.gms.games.leaderboard.LeaderboardScore;
+import com.google.android.gms.games.leaderboard.LeaderboardVariant;
+import com.google.android.gms.games.snapshot.Snapshot;
+import com.google.android.gms.games.snapshot.SnapshotMetadata;
+import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
+import com.google.android.gms.games.snapshot.SnapshotsClient;
+import com.google.android.gms.games.stats.PlayerStats;
+import com.google.android.gms.games.event.Event;
+import com.google.android.gms.games.event.EventBuffer;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -37,9 +73,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -47,59 +80,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.CommonStatusCodes;
-import com.google.android.gms.common.images.ImageManager;
-
-import com.google.android.gms.games.AchievementsClient;
-
-import com.google.android.gms.games.AnnotatedData;
-import com.google.android.gms.games.Games;
-import com.google.android.gms.games.LeaderboardsClient;
-import com.google.android.gms.games.PlayGames;
-import com.google.android.gms.games.PlayGamesSdk;
-import com.google.android.gms.games.GamesSignInClient;
-
-import com.google.android.gms.games.Player;
-import com.google.android.gms.games.PlayersClient;
-import com.google.android.gms.games.leaderboard.LeaderboardBuffer;
-import com.google.android.gms.games.leaderboard.LeaderboardScore;
-import com.google.android.gms.games.leaderboard.LeaderboardVariant;
-
-import com.google.android.gms.games.SnapshotsClient;
-import com.google.android.gms.games.snapshot.Snapshot;
-import com.google.android.gms.games.snapshot.SnapshotMetadata;
-
-import com.google.android.gms.games.FriendsResolutionRequiredException;
-import com.google.android.gms.games.PlayerBuffer;
-
-import com.google.android.gms.games.stats.PlayerStats;
-
-import com.google.android.gms.games.event.EventBuffer;
-import com.google.android.gms.games.event.Event;
-
-import android.content.Intent;
-
-import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.ConnectionResult;
-
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.games.AuthenticationResult;
-import com.google.android.gms.games.achievement.Achievement;
-import com.google.android.gms.games.achievement.AchievementsClient.LoadAchievementsResult;
-import com.google.android.gms.games.event.EventsClient;
-import com.google.android.gms.games.leaderboard.ScoreSubmissionData;
-import com.google.android.gms.games.stats.PlayerStatsClient;
 
 /**
  * Google Play Games Services Plugin for Cordova
