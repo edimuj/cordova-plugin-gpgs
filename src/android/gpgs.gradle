@@ -1,10 +1,7 @@
 allprojects {
     configurations.all {
         resolutionStrategy {
-            force 'com.google.android.gms:play-services-games:23.2.0'
-            force 'com.google.android.gms:play-services-auth:21.2.0'
-            force 'com.google.android.gms:play-services-base:18.5.0'
-            force 'com.google.android.gms:play-services-basement:18.4.0'
+            force 'com.google.android.gms:play-services-games-v2:20.0.0'
         }
     }
 } 

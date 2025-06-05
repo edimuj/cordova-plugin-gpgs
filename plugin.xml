@@ -48,7 +48,7 @@
         </config-file>
 
         <!-- Google Play Games Services -->
-        <framework src="com.google.android.gms:play-services-games:+" />
+        <framework src="com.google.android.gms:play-services-games-v2:+" />
         <framework src="com.google.android.gms:play-services-auth:+" />
 
         <!-- Custom Gradle file to forcefully resolve dependency conflicts -->
