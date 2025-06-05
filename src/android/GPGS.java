@@ -278,8 +278,8 @@ public class GPGS extends CordovaPlugin {
                     if (resultCode == ConnectionResult.SUCCESS) {
                         debugLog("Google Play Services are available, attempting silent sign-in");
                         // Attempt silent sign-in
-                        PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
-                        signInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                        GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
+                        gamesSignInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
                             @Override
                             public void onComplete(@NonNull Task<Player> task) {
                                 if (task.isSuccessful()) {
@@ -341,7 +341,7 @@ public class GPGS extends CordovaPlugin {
             @Override
             public void run() {
                 try {
-                    PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
+                    GamesSignInClient signInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
                     signInClient.isAuthenticated().addOnCompleteListener(new OnCompleteListener<Boolean>() {
                         @Override
                         public void onComplete(@NonNull Task<Boolean> task) {
@@ -440,8 +440,8 @@ public class GPGS extends CordovaPlugin {
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
-                signInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
+                gamesSignInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
                     @Override
                     public void onComplete(@NonNull Task<Player> task) {
                         if (task.isSuccessful()) {
@@ -470,8 +470,8 @@ public class GPGS extends CordovaPlugin {
                     signInSilently();
                 } catch (Exception e) {
                     debugLog("Silent sign-in failed, showing sign-in UI", e);
-                    PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
-                    signInClient.signIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                    GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
+                    gamesSignInClient.signIn().addOnCompleteListener(new OnCompleteListener<Player>() {
                         @Override
                         public void onComplete(@NonNull Task<Player> task) {
                             if (task.isSuccessful()) {
