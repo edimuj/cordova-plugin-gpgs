@@ -88,6 +88,9 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.ConnectionResult;
+
 /**
  * Google Play Games Services Plugin for Cordova
  * 
@@ -102,6 +105,7 @@ import com.google.android.gms.tasks.Task;
 public class GPGS extends CordovaPlugin {
 
     private static final String TAG = "GOOGLE_PLAY_GAMES";
+    private boolean debugMode = false;
 
     private static final int RC_ACHIEVEMENT_UI = 9003;
     private static final int RC_LEADERBOARD_UI = 9004;
@@ -116,6 +120,9 @@ public class GPGS extends CordovaPlugin {
     private static final String EVENT_SAVE_GAME_REQUEST = "saveGameRequest";
     private static final String EVENT_SAVE_GAME_CONFLICT = "saveGameConflict";
     private static final String EVENT_FRIENDS_LIST_REQUEST_SUCCESSFUL = "friendsListRequestSuccessful";
+    private static final String EVENT_SIGN_IN = "gpgs.signin";
+    private static final String EVENT_SIGN_OUT = "gpgs.signout";
+    private static final String EVENT_AVAILABILITY = "gpgs.availability";
 
     private static final int ERROR_CODE_HAS_RESOLUTION = 1;
     private static final int ERROR_CODE_NO_RESOLUTION = 2;
@@ -123,11 +130,17 @@ public class GPGS extends CordovaPlugin {
     private RelativeLayout bannerContainerLayout;
     private CordovaWebView cordovaWebView;
     private ViewGroup parentLayout;
+    private boolean wasSignedIn = false;
 
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        debugLog("Executing action: " + action);
 
-        if (action.equals("login")) {
+        if (action.equals("isGooglePlayServicesAvailable")) {
+            this.isGooglePlayServicesAvailableAction(callbackContext);
+            return true;
+        }
+        else if (action.equals("login")) {
             this.loginAction(args, callbackContext);
             return true;
         }
@@ -247,16 +260,114 @@ public class GPGS extends CordovaPlugin {
         cordovaWebView = webView;
         super.initialize(cordova, webView);
         
+        // Initialize debug mode from preferences
+        debugMode = preferences.getBoolean("GPGS_DEBUG", false);
+        debugLog("Initializing GPGS plugin with debug mode: " + debugMode);
+        
         // Initialize Play Games SDK with modern v2 approach
         PlayGamesSdk.initialize(cordova.getActivity());
+
+        // Check Google Play Services availability and attempt silent sign-in
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
+                    int resultCode = googleApiAvailability.isGooglePlayServicesAvailable(cordova.getActivity());
+                    
+                    if (resultCode == ConnectionResult.SUCCESS) {
+                        debugLog("Google Play Services are available, attempting silent sign-in");
+                        // Attempt silent sign-in
+                        PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
+                        signInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Player> task) {
+                                if (task.isSuccessful()) {
+                                    debugLog("Silent sign-in successful during initialization");
+                                    wasSignedIn = true;
+                                    // Emit event for successful sign-in
+                                    try {
+                                        JSONObject data = new JSONObject();
+                                        data.put("isSignedIn", true);
+                                        emitWindowEvent(EVENT_SIGN_IN, data);
+                                    } catch (JSONException e) {
+                                        debugLog("Error creating sign-in event data: " + e.getMessage(), e);
+                                    }
+                                } else {
+                                    debugLog("Silent sign-in failed during initialization: " + 
+                                            (task.getException() != null ? task.getException().getMessage() : "Unknown error"));
+                                    wasSignedIn = false;
+                                    // Emit event for failed sign-in
+                                    try {
+                                        JSONObject data = new JSONObject();
+                                        data.put("isSignedIn", false);
+                                        if (task.getException() != null) {
+                                            data.put("error", task.getException().getMessage());
+                                        }
+                                        emitWindowEvent(EVENT_SIGN_IN, data);
+                                    } catch (JSONException e) {
+                                        debugLog("Error creating sign-in event data: " + e.getMessage(), e);
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        debugLog("Google Play Services are not available (result code: " + resultCode + ")");
+                        // Emit event for Google Play Services unavailability
+                        try {
+                            JSONObject data = new JSONObject();
+                            data.put("available", false);
+                            data.put("errorCode", resultCode);
+                            data.put("errorString", googleApiAvailability.getErrorString(resultCode));
+                            data.put("isUserResolvable", googleApiAvailability.isUserResolvableError(resultCode));
+                            emitWindowEvent(EVENT_AVAILABILITY, data);
+                        } catch (JSONException e) {
+                            debugLog("Error creating availability event data: " + e.getMessage(), e);
+                        }
+                    }
+                } catch (Exception e) {
+                    debugLog("Error during initialization: " + e.getMessage(), e);
+                }
+            }
+        });
     }
 
     @Override
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
-        // When the activity is inactive, the signed-in user's state can change;
-        // therefore, silently sign in when the app resumes.
-        signInSilently();
+        
+        // Check for background sign-out
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
+                    signInClient.isAuthenticated().addOnCompleteListener(new OnCompleteListener<Boolean>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Boolean> task) {
+                            if (task.isSuccessful()) {
+                                boolean isCurrentlySignedIn = task.getResult();
+                                // If we were signed in but now we're not, emit sign-out event
+                                if (wasSignedIn && !isCurrentlySignedIn) {
+                                    debugLog("User signed out in background");
+                                    try {
+                                        JSONObject data = new JSONObject();
+                                        data.put("isSignedIn", false);
+                                        data.put("reason", "background_signout");
+                                        emitWindowEvent(EVENT_SIGN_OUT, data);
+                                    } catch (JSONException e) {
+                                        debugLog("Error creating sign-out event data: " + e.getMessage(), e);
+                                    }
+                                }
+                                wasSignedIn = isCurrentlySignedIn;
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    debugLog("Error checking sign-in status in onResume: " + e.getMessage(), e);
+                }
+            }
+        });
     }
 
     /** ----------------------- UTILS --------------------------- */
@@ -325,29 +436,23 @@ public class GPGS extends CordovaPlugin {
      * Silent sign-in as recommended in v2 migration guide
      */
     private void signInSilently() {
+        debugLog("Attempting silent sign-in");
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    GamesSignInClient signInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                    signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                        if (task.isSuccessful() && task.getResult().isAuthenticated()) {
-                            Log.d(TAG, "User is already authenticated");
+                PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
+                signInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Player> task) {
+                        if (task.isSuccessful()) {
+                            debugLog("Silent sign-in successful");
+                            // Successfully signed in
                         } else {
-                            Log.d(TAG, "User not authenticated, attempting silent sign-in");
-                            // Attempt silent sign-in
-                            signInClient.signIn().addOnCompleteListener(signInTask -> {
-                                if (signInTask.isSuccessful()) {
-                                    Log.d(TAG, "Silent sign-in successful");
-                                } else {
-                                    Log.d(TAG, "Silent sign-in failed");
-                                }
-                            });
+                            debugLog("Silent sign-in failed: " + task.getException().getMessage(), task.getException());
+                            // Failed to sign in silently
                         }
-                    });
-                } catch (Exception e) {
-                    Log.e(TAG, "Error during silent sign-in: " + e.getMessage());
-                }
+                    }
+                });
             }
         });
     }
@@ -356,30 +461,28 @@ public class GPGS extends CordovaPlugin {
      * Login - Updated for v2 API
      */
     private void loginAction(JSONArray args, final CallbackContext callbackContext) {
+        debugLog("Starting login action");
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    GamesSignInClient signInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                    
-                    // Check if already authenticated
-                    signInClient.isAuthenticated().addOnCompleteListener(task -> {
-                        if (task.isSuccessful() && task.getResult().isAuthenticated()) {
-                            // Already signed in
-                            callbackContext.success();
-                        } else {
-                            // Need to sign in
-                            signInClient.signIn().addOnCompleteListener(signInTask -> {
-                                if (signInTask.isSuccessful()) {
-                                    callbackContext.success();
-                                } else {
-                                    callbackContext.error("Authentication failed");
-                                }
-                            });
+                    debugLog("Attempting to sign in silently first");
+                    signInSilently();
+                } catch (Exception e) {
+                    debugLog("Silent sign-in failed, showing sign-in UI", e);
+                    PlayGamesSignInClient signInClient = PlayGames.getSignInClient(cordova.getActivity());
+                    signInClient.signIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Player> task) {
+                            if (task.isSuccessful()) {
+                                debugLog("Sign-in successful");
+                                callbackContext.success();
+                            } else {
+                                debugLog("Sign-in failed: " + task.getException().getMessage(), task.getException());
+                                callbackContext.error("Sign-in failed: " + task.getException().getMessage());
+                            }
                         }
                     });
-                } catch (Exception e) {
-                    callbackContext.error("Login failed: " + e.getMessage());
                 }
             }
         });
@@ -1178,6 +1281,7 @@ public class GPGS extends CordovaPlugin {
      * Check if signed in - Updated for v2 API
      */
     private void isSignedInAction(final CallbackContext callbackContext) {
+        debugLog("Checking sign-in status");
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1186,17 +1290,75 @@ public class GPGS extends CordovaPlugin {
                     signInClient.isAuthenticated().addOnCompleteListener(task -> {
                         try {
                             boolean isSignedIn = task.isSuccessful() && task.getResult().isAuthenticated();
-                            JSONObject result = new JSONObject();
-                            result.put("isSignedIn", isSignedIn);
-                            callbackContext.success(result);
-                        } catch (JSONException e) {
-                            callbackContext.error("Error creating result: " + e.getMessage());
+                            debugLog("Sign-in status: " + isSignedIn);
+                            callbackContext.success(isSignedIn);
+                        } catch (Exception e) {
+                            debugLog("Error creating result: " + e.getMessage(), e);
+                            callbackContext.error("Error checking sign-in status: " + e.getMessage());
                         }
                     });
                 } catch (Exception e) {
+                    debugLog("Error checking sign-in status: " + e.getMessage(), e);
                     callbackContext.error("Error checking sign-in status: " + e.getMessage());
                 }
             }
         });
+    }
+
+    /**
+     * Check if Google Play Services are available
+     */
+    private void isGooglePlayServicesAvailableAction(final CallbackContext callbackContext) {
+        debugLog("Checking Google Play Services availability");
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
+                    int resultCode = googleApiAvailability.isGooglePlayServicesAvailable(cordova.getActivity());
+                    
+                    boolean isAvailable = resultCode == ConnectionResult.SUCCESS;
+                    debugLog("Google Play Services availability: " + isAvailable + " (result code: " + resultCode + ")");
+                    
+                    if (isAvailable) {
+                        callbackContext.success(true);
+                    } else {
+                        // If services are not available, we can provide more detailed information
+                        JSONObject result = new JSONObject();
+                        result.put("available", false);
+                        result.put("errorCode", resultCode);
+                        result.put("errorString", googleApiAvailability.getErrorString(resultCode));
+                        result.put("isUserResolvable", googleApiAvailability.isUserResolvableError(resultCode));
+                        callbackContext.success(result);
+                    }
+                } catch (Exception e) {
+                    debugLog("Error checking Google Play Services availability: " + e.getMessage(), e);
+                    callbackContext.error("Error checking Google Play Services availability: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void debugLog(String message) {
+        if (debugMode) {
+            Log.d(TAG, message);
+        }
+    }
+
+    private void debugLog(String message, Throwable throwable) {
+        if (debugMode) {
+            Log.d(TAG, message, throwable);
+        }
+    }
+
+    private void handleError(Exception e, CallbackContext callbackContext) {
+        debugLog("Error occurred: " + e.getMessage(), e);
+        if (e instanceof ApiException) {
+            ApiException apiException = (ApiException) e;
+            debugLog("API Exception status code: " + apiException.getStatusCode());
+            callbackContext.error(apiException.getStatusCode());
+        } else {
+            callbackContext.error(e.getMessage());
+        }
     }
 }

@@ -22,6 +22,7 @@
     <platform name="android">
         <preference name="APP_ID" />
         <preference name="PLAY_SERVICES_VERSION" default="23.2.0" />
+        <preference name="GPGS_DEBUG" default="false" />
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="GPGS">

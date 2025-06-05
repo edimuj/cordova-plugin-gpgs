@@ -4,17 +4,34 @@ A modern Cordova plugin for Google Play Games Services v2 API with comprehensive
 
 ## Features
 
-- ✅ Authentication (v2 API)
-- ✅ Leaderboards
-- ✅ Achievements
-- ✅ Cloud saves
-- ✅ Friends
-- ✅ Player stats
-- ✅ Events
-- ✅ Quests
-- ✅ Milestones
-- ✅ Challenges
-- ✅ Snapshots
+- **Authentication**
+  - Automatic silent sign-in on startup
+  - Background sign-out detection
+  - Manual sign-in support
+  - Sign-in state events
+- **Leaderboards**
+  - Submit scores
+  - Show leaderboards
+  - Get player scores
+- **Achievements**
+  - Unlock achievements
+  - Increment achievements
+  - Show achievements UI
+- **Cloud Saves**
+  - Save game data
+  - Load game data
+  - Show saved games UI
+- **Friends**
+  - Get friends list
+  - Show player profiles
+  - Player search
+- **Player Stats**
+  - Get player info
+  - Get player stats
+- **Events**
+  - Increment events
+  - Get event data
+  - Get all events
 
 ## Requirements
 
@@ -34,238 +51,360 @@ cordova plugin add cordova-plugin-gpgs --variable APP_ID="your-app-id" --variabl
 - `APP_ID` (required): Your Google Play Games App ID
 - `PLAY_SERVICES_VERSION` (optional): Version of Google Play Services to use (default: 23.2.0)
 
-## Usage
+## Configuration
 
-All methods return Promises for modern async/await support.
-
-### Authentication
-
-```javascript
-// Check if user is signed in
-try {
-    const isSignedIn = await cordova.plugins.GPGS.isSignedIn();
-    if (isSignedIn) {
-        // User is signed in
-        enableGameFeatures();
-    } else {
-        // Show sign-in button
-        showSignInButton();
-    }
-} catch (error) {
-    console.error('Error checking sign-in status:', error);
-}
-
-// Sign in
-try {
-    await cordova.plugins.GPGS.login();
-    // Sign-in successful
-    enableGameFeatures();
-} catch (error) {
-    console.error('Sign-in failed:', error);
-}
-```
-
-### Achievements
-
-```javascript
-// Unlock achievement
-try {
-    await cordova.plugins.GPGS.unlockAchievement('achievement_id');
-    console.log('Achievement unlocked!');
-} catch (error) {
-    console.error('Failed to unlock achievement:', error);
-}
-
-// Increment achievement
-try {
-    await cordova.plugins.GPGS.incrementAchievement('achievement_id', 1);
-    console.log('Achievement incremented!');
-} catch (error) {
-    console.error('Failed to increment achievement:', error);
-}
-
-// Show achievements UI
-try {
-    await cordova.plugins.GPGS.showAchievements();
-    console.log('Achievements UI closed');
-} catch (error) {
-    console.error('Failed to show achievements:', error);
-}
-```
-
-### Leaderboards
-
-```javascript
-// Submit score
-try {
-    await cordova.plugins.GPGS.submitScore('leaderboard_id', 1000);
-    console.log('Score submitted!');
-} catch (error) {
-    console.error('Failed to submit score:', error);
-}
-
-// Get player's score
-try {
-    const score = await cordova.plugins.GPGS.getPlayerScore('leaderboard_id');
-    console.log('Player score:', score);
-} catch (error) {
-    console.error('Failed to get player score:', error);
-}
-
-// Show leaderboard UI
-try {
-    await cordova.plugins.GPGS.showLeaderboard('leaderboard_id');
-    console.log('Leaderboard UI closed');
-} catch (error) {
-    console.error('Failed to show leaderboard:', error);
-}
-
-// Show all leaderboards
-try {
-    await cordova.plugins.GPGS.showAllLeaderboards();
-    console.log('Leaderboards UI closed');
-} catch (error) {
-    console.error('Failed to show leaderboards:', error);
-}
-```
-
-### Cloud Saves
-
-```javascript
-// Save game
-try {
-    await cordova.plugins.GPGS.saveGame('save_name', { level: 5, score: 1000 });
-    console.log('Game saved!');
-} catch (error) {
-    console.error('Failed to save game:', error);
-}
-
-// Load game
-try {
-    const saveData = await cordova.plugins.GPGS.loadGame('save_name');
-    console.log('Game loaded:', saveData);
-} catch (error) {
-    console.error('Failed to load game:', error);
-}
-
-// Show saved games UI
-try {
-    await cordova.plugins.GPGS.showSavedGames({
-        title: 'Saved Games',
-        allowAddButton: true,
-        allowDelete: true,
-        maxSnapshots: 5
-    });
-    console.log('Saved games UI closed');
-} catch (error) {
-    console.error('Failed to show saved games:', error);
-}
-```
-
-### Player Data
-
-```javascript
-// Get player info
-try {
-    const playerInfo = await cordova.plugins.GPGS.getPlayerInfo();
-    console.log('Player info:', playerInfo);
-} catch (error) {
-    console.error('Failed to get player info:', error);
-}
-
-// Get player stats
-try {
-    const stats = await cordova.plugins.GPGS.getPlayerStats();
-    console.log('Player stats:', stats);
-} catch (error) {
-    console.error('Failed to get player stats:', error);
-}
-
-// Get friends list
-try {
-    const friends = await cordova.plugins.GPGS.getFriendsList();
-    console.log('Friends:', friends);
-} catch (error) {
-    console.error('Failed to get friends:', error);
-}
-
-// Show player profile
-try {
-    await cordova.plugins.GPGS.showPlayerProfile('player_id');
-    console.log('Profile UI closed');
-} catch (error) {
-    console.error('Failed to show profile:', error);
-}
-```
-
-### Events
-
-```javascript
-// Increment event
-try {
-    await cordova.plugins.GPGS.incrementEvent('event_id', 1);
-    console.log('Event incremented!');
-} catch (error) {
-    console.error('Failed to increment event:', error);
-}
-
-// Get all events
-try {
-    const events = await cordova.plugins.GPGS.getAllEvents();
-    console.log('Events:', events);
-} catch (error) {
-    console.error('Failed to get events:', error);
-}
-
-// Get specific event
-try {
-    const event = await cordova.plugins.GPGS.getEvent('event_id');
-    console.log('Event:', event);
-} catch (error) {
-    console.error('Failed to get event:', error);
-}
-```
-
-## Error Handling
-
-The plugin uses standard JavaScript Promises for error handling. All methods can throw errors that should be caught using try/catch blocks. Common error types include:
-
-- Authentication errors
-- Network errors
-- Invalid parameter errors
-- Google Play Services errors
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Sign-in not working**
-   - Make sure your app is properly configured in the Google Play Console
-   - Verify your APP_ID is correct
-   - Check that the app is signed with the correct keystore
-   - Ensure Google Play Services is up to date on the device
-
-2. **Achievements/Leaderboards not showing**
-   - Verify they are properly configured in the Google Play Console
-   - Check that the IDs match exactly
-   - Ensure the app is published to the correct track
-   - Verify the player is signed in
-
-3. **Cloud saves not working**
-   - Check that cloud save is enabled in the Google Play Console
-   - Verify the player is signed in
-   - Check for proper error handling
-   - Ensure the device has enough storage space
-
-### Debug Mode
-
-To enable debug mode, add this to your `config.xml`:
+Add the following to your `config.xml`:
 
 ```xml
 <preference name="GPGS_DEBUG" value="true" />
 ```
 
-This will enable verbose logging in the Android logcat.
+## Usage
+
+### Initialization
+
+The plugin automatically initializes when your app starts. It will:
+1. Check if Google Play Services are available
+2. Attempt silent sign-in if services are available
+3. Emit events for sign-in status and service availability
+
+```javascript
+// Listen for sign-in events
+document.addEventListener('gpgs.signin', function(event) {
+    const data = event.detail;
+    if (data.isSignedIn) {
+        console.log('User is signed in');
+        // Enable game features
+    } else {
+        console.log('Sign-in failed:', data.error);
+        // Show sign-in button or handle error
+    }
+});
+
+// Listen for sign-out events (including background sign-out)
+document.addEventListener('gpgs.signout', function(event) {
+    const data = event.detail;
+    console.log('User signed out:', data.reason);
+    // Disable game features that require sign-in
+    // Show sign-in button
+});
+
+// Listen for Google Play Services availability
+document.addEventListener('gpgs.availability', function(event) {
+    const data = event.detail;
+    if (data.available) {
+        console.log('Google Play Services are available');
+    } else {
+        console.log('Google Play Services are not available:', data.errorString);
+        if (data.isUserResolvable) {
+            // Show UI to help user resolve the issue
+            console.log('This issue can be resolved by the user');
+        }
+    }
+});
+```
+
+### Authentication
+
+```javascript
+// Check if user is signed in
+GPGS.isSignedIn().then(isSignedIn => {
+    if (isSignedIn) {
+        console.log('User is signed in');
+    } else {
+        console.log('User is not signed in');
+    }
+});
+// Returns: Promise<boolean>
+
+// Manual sign-in
+GPGS.login().then(() => {
+    console.log('Sign-in successful');
+}).catch(error => {
+    console.error('Sign-in failed:', error);
+});
+// Returns: Promise<void>
+```
+
+### Leaderboards
+
+```javascript
+// Submit a score
+GPGS.submitScore('leaderboard_id', 1000).then(() => {
+    console.log('Score submitted');
+});
+// Returns: Promise<void>
+
+// Show a leaderboard
+GPGS.showLeaderboard('leaderboard_id').then(() => {
+    console.log('Leaderboard shown');
+});
+// Returns: Promise<void>
+
+// Get player's score
+GPGS.getPlayerScore('leaderboard_id').then(score => {
+    console.log('Player score:', score);
+});
+// Returns: Promise<{
+//   score: number,
+//   displayScore: string,
+//   scoreTag: string
+// }>
+```
+
+### Achievements
+
+```javascript
+// Unlock an achievement
+GPGS.unlockAchievement('achievement_id').then(() => {
+    console.log('Achievement unlocked');
+});
+// Returns: Promise<void>
+
+// Increment an achievement
+GPGS.incrementAchievement('achievement_id', 1).then(() => {
+    console.log('Achievement incremented');
+});
+// Returns: Promise<void>
+
+// Show achievements UI
+GPGS.showAchievements().then(() => {
+    console.log('Achievements UI shown');
+});
+// Returns: Promise<void>
+```
+
+### Cloud Saves
+
+```javascript
+// Save game data
+GPGS.saveGame('save_name', {
+    level: 1,
+    score: 1000
+}).then(() => {
+    console.log('Game saved');
+});
+// Returns: Promise<void>
+
+// Load game data
+GPGS.loadGame('save_name').then(data => {
+    console.log('Game loaded:', data);
+});
+// Returns: Promise<Object> - The saved game data
+
+// Show saved games UI
+GPGS.showSavedGames({
+    title: 'Saved Games',
+    allowAddButton: true,
+    allowDelete: true,
+    maxSnapshots: 5
+}).then(() => {
+    console.log('Saved games UI shown');
+});
+// Returns: Promise<void>
+```
+
+### Friends
+
+```javascript
+// Get friends list
+GPGS.getFriendsList().then(friends => {
+    console.log('Friends:', friends);
+});
+// Returns: Promise<Array<{
+//   id: string,
+//   name: string,
+//   title: string,
+//   retrievedTimestamp: number,
+//   bannerImageLandscapeUri?: string,
+//   bannerImagePortraitUri?: string,
+//   iconImageUri?: string,
+//   hiResImageUri?: string,
+//   iconImageBase64?: string,
+//   levelInfo?: {
+//     currentLevel: number,
+//     maxXp: number,
+//     minXp: number,
+//     hashCode: number
+//   },
+//   currentPlayerInfo?: {
+//     friendsListVisibilityStatus: number
+//   },
+//   friendStatus?: number
+// }>>
+
+// Show player profile
+GPGS.showPlayerProfile('player_id').then(() => {
+    console.log('Player profile shown');
+});
+// Returns: Promise<void>
+
+// Show player search
+GPGS.showPlayerSearch().then(() => {
+    console.log('Player search shown');
+});
+// Returns: Promise<void>
+```
+
+### Player Stats
+
+```javascript
+// Get player info
+GPGS.getPlayerInfo().then(player => {
+    console.log('Player info:', player);
+});
+// Returns: Promise<{
+//   id: string,
+//   name: string,
+//   title: string,
+//   retrievedTimestamp: number,
+//   bannerImageLandscapeUri?: string,
+//   bannerImagePortraitUri?: string,
+//   iconImageUri?: string,
+//   hiResImageUri?: string,
+//   iconImageBase64?: string,
+//   levelInfo?: {
+//     currentLevel: number,
+//     maxXp: number,
+//     minXp: number,
+//     hashCode: number
+//   }
+// }>
+
+// Get player stats
+GPGS.getPlayerStats().then(stats => {
+    console.log('Player stats:', stats);
+});
+// Returns: Promise<{
+//   averageSessionLength: number,
+//   daysSinceLastPlayed: number,
+//   numberOfPurchases: number,
+//   numberOfSessions: number,
+//   sessionPercentile: number,
+//   spendPercentile: number
+// }>
+```
+
+### Events
+
+```javascript
+// Increment an event
+GPGS.incrementEvent('event_id', 1).then(() => {
+    console.log('Event incremented');
+});
+// Returns: Promise<void>
+
+// Get all events
+GPGS.getAllEvents().then(events => {
+    console.log('All events:', events);
+});
+// Returns: Promise<Array<{
+//   id: string,
+//   name: string,
+//   description: string,
+//   iconImageUri: string,
+//   formattedValue: string,
+//   value: number,
+//   player: {
+//     id: string,
+//     name: string,
+//     title: string,
+//     retrievedTimestamp: number,
+//     bannerImageLandscapeUri?: string,
+//     bannerImagePortraitUri?: string,
+//     iconImageUri?: string,
+//     hiResImageUri?: string,
+//     iconImageBase64?: string,
+//     levelInfo?: {
+//       currentLevel: number,
+//       maxXp: number,
+//       minXp: number,
+//       hashCode: number
+//     }
+//   }
+// }>>
+
+// Get specific event
+GPGS.getEvent('event_id').then(event => {
+    console.log('Event:', event);
+});
+// Returns: Promise<{
+//   id: string,
+//   name: string,
+//   description: string,
+//   iconImageUri: string,
+//   formattedValue: string,
+//   value: number,
+//   player: {
+//     id: string,
+//     name: string,
+//     title: string,
+//     retrievedTimestamp: number,
+//     bannerImageLandscapeUri?: string,
+//     bannerImagePortraitUri?: string,
+//     iconImageUri?: string,
+//     hiResImageUri?: string,
+//     iconImageBase64?: string,
+//     levelInfo?: {
+//       currentLevel: number,
+//       maxXp: number,
+//       minXp: number,
+//       hashCode: number
+//     }
+//   }
+// }>
+```
+
+## Events
+
+The plugin emits the following events:
+
+### `gpgs.signin`
+Emitted when sign-in state changes.
+```javascript
+{
+    isSignedIn: boolean,
+    error?: string  // Present if sign-in failed
+}
+```
+
+### `gpgs.signout`
+Emitted when user signs out (including background sign-out).
+```javascript
+{
+    isSignedIn: false,
+    reason: string  // e.g., "background_signout"
+}
+```
+
+### `gpgs.availability`
+Emitted when Google Play Services availability changes.
+```javascript
+{
+    available: boolean,
+    errorCode?: number,
+    errorString?: string,
+    isUserResolvable?: boolean
+}
+```
+
+## Error Handling
+
+The plugin uses promises for all operations. Errors are passed to the catch handler:
+
+```javascript
+GPGS.login().catch(error => {
+    console.error('Error:', error);
+});
+```
+
+## Debug Mode
+
+Enable debug mode in `config.xml` to see detailed logs:
+
+```xml
+<preference name="GPGS_DEBUG" value="true" />
+```
 
 ## License
 
