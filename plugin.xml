@@ -30,11 +30,11 @@
             </feature>
         </config-file>
 
-        <config-file target="AndroidManifest.xml" mode="merge" parent="/manifest">
+        <config-file target="AndroidManifest.xml" parent="/manifest">
             <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
         </config-file>
 
-        <config-file target="AndroidManifest.xml" mode="merge" parent="/manifest/application">
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <meta-data
               android:name="com.google.android.gms.games.APP_ID"
               android:value="@string/app_id" />
