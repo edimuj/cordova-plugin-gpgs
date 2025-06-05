@@ -1,8 +1,9 @@
 allprojects {
     configurations.all {
-        resolutionStrategy {
-            dependencySubstitution {
-                substitute module('com.google.android.gms:play-services-games') with module('com.google.android.gms:play-services-games-v2:20.1.0') because 'the V2 SDK is required and replaces the old one'
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'com.google.android.gms' && details.requested.name == 'play-services-games') {
+                details.useTarget 'com.google.android.gms:play-services-games-v2:20.1.0'
+                details.because 'the V2 SDK is required and replaces the old one'
             }
         }
     }
