@@ -48,13 +48,11 @@
         </config-file>
 
         <!-- Google Play Games Services -->
-        <!--
-          The main 'play-services-games' library now includes the v2 APIs.
-          We specify an explicit version to avoid conflicts with other plugins
-          that might be pulling in older versions.
-        -->
-        <framework src="com.google.android.gms:play-services-games:23.2.0" />
-        <framework src="com.google.android.gms:play-services-auth:21.2.0" />
+        <framework src="com.google.android.gms:play-services-games:+" />
+        <framework src="com.google.android.gms:play-services-auth:+" />
+
+        <!-- Custom Gradle file to forcefully resolve dependency conflicts -->
+        <framework src="src/android/gpgs.gradle" custom="true" type="gradleReference" />
 
         <source-file src="src/android/GPGS.java"
                      target-dir="src/com/exelerus/cordova/plugin" />
