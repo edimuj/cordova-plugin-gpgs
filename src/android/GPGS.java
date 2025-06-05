@@ -91,6 +91,16 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.ConnectionResult;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.games.AuthenticationResult;
+import com.google.android.gms.games.achievement.Achievement;
+import com.google.android.gms.games.achievement.AchievementsClient.LoadAchievementsResult;
+import com.google.android.gms.games.event.EventsClient;
+import com.google.android.gms.games.leaderboard.ScoreSubmissionData;
+import com.google.android.gms.games.stats.PlayerStatsClient;
+
 /**
  * Google Play Games Services Plugin for Cordova
  * 
