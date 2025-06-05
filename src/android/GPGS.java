@@ -279,9 +279,9 @@ public class GPGS extends CordovaPlugin {
                         debugLog("Google Play Services are available, attempting silent sign-in");
                         // Attempt silent sign-in
                         GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                        gamesSignInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                        gamesSignInClient.signIn().addOnCompleteListener(new OnCompleteListener<AuthenticationResult>() {
                             @Override
-                            public void onComplete(@NonNull Task<Player> task) {
+                            public void onComplete(@NonNull Task<AuthenticationResult> task) {
                                 if (task.isSuccessful()) {
                                     debugLog("Silent sign-in successful during initialization");
                                     wasSignedIn = true;
@@ -342,11 +342,11 @@ public class GPGS extends CordovaPlugin {
             public void run() {
                 try {
                     GamesSignInClient signInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                    signInClient.isAuthenticated().addOnCompleteListener(new OnCompleteListener<Boolean>() {
+                    signInClient.isAuthenticated().addOnCompleteListener(new OnCompleteListener<AuthenticationResult>() {
                         @Override
-                        public void onComplete(@NonNull Task<Boolean> task) {
+                        public void onComplete(@NonNull Task<AuthenticationResult> task) {
                             if (task.isSuccessful()) {
-                                boolean isCurrentlySignedIn = task.getResult();
+                                boolean isCurrentlySignedIn = task.getResult().isAuthenticated();
                                 // If we were signed in but now we're not, emit sign-out event
                                 if (wasSignedIn && !isCurrentlySignedIn) {
                                     debugLog("User signed out in background");
@@ -441,9 +441,9 @@ public class GPGS extends CordovaPlugin {
             @Override
             public void run() {
                 GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                gamesSignInClient.silentSignIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                gamesSignInClient.signIn().addOnCompleteListener(new OnCompleteListener<AuthenticationResult>() {
                     @Override
-                    public void onComplete(@NonNull Task<Player> task) {
+                    public void onComplete(@NonNull Task<AuthenticationResult> task) {
                         if (task.isSuccessful()) {
                             debugLog("Silent sign-in successful");
                             // Successfully signed in
@@ -471,9 +471,9 @@ public class GPGS extends CordovaPlugin {
                 } catch (Exception e) {
                     debugLog("Silent sign-in failed, showing sign-in UI", e);
                     GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
-                    gamesSignInClient.signIn().addOnCompleteListener(new OnCompleteListener<Player>() {
+                    gamesSignInClient.signIn().addOnCompleteListener(new OnCompleteListener<AuthenticationResult>() {
                         @Override
-                        public void onComplete(@NonNull Task<Player> task) {
+                        public void onComplete(@NonNull Task<AuthenticationResult> task) {
                             if (task.isSuccessful()) {
                                 debugLog("Sign-in successful");
                                 callbackContext.success();
