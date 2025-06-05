@@ -47,10 +47,11 @@
             <string name="app_id">$APP_ID</string>
         </config-file>
 
-        <!-- Google Play Games Services v2 API -->
-        <framework src="com.google.android.gms:play-services-games-v2:+" />
+        <!-- Google Play Games Services -->
+        <!-- The main 'play-services-games' library now includes the v2 sign-in APIs. -->
+        <!-- We use a custom gradle file to enforce a modern version of this library. -->
+        <framework src="com.google.android.gms:play-services-games:+" />
         <framework src="com.google.android.gms:play-services-auth:+" />
-        <framework src="com.google.android.gms:play-services-stats:+" />
 
         <!-- Custom Gradle file to resolve dependency conflicts -->
         <framework src="src/android/gpgs.gradle" custom="true" type="gradleReference" />
