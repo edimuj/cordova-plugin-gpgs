@@ -52,6 +52,7 @@ import com.google.android.gms.games.SnapshotsClient;
 import com.google.android.gms.games.event.Event;
 import com.google.android.gms.games.event.EventBuffer;
 import com.google.android.gms.games.leaderboard.LeaderboardScore;
+import com.google.android.gms.games.leaderboard.LeaderboardVariant;
 import com.google.android.gms.games.snapshot.Snapshot;
 import com.google.android.gms.games.snapshot.SnapshotMetadata;
 import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
@@ -515,68 +516,34 @@ public class GPGS extends CordovaPlugin {
     private void unlockAchievementAction(String achievementId, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                AchievementsClient achievementsClient = PlayGames.getAchievementsClient(cordova.getActivity());
-                achievementsClient.unlock(achievementId)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callbackContext.success();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            callbackContext.error("Error unlocking achievement: " + e.getMessage());
-                        }
-                    });
+                PlayGames.getAchievementsClient(cordova.getActivity()).unlock(achievementId);
+                callbackContext.success();
             }
         });
     }
 
     /**
-     * Increment achievement
+     * Increment an achievement
+     * Note: This is a fire-and-forget operation in v2.
      */
     private void incrementAchievementAction(String achievementId, Integer count, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                AchievementsClient achievementsClient = PlayGames.getAchievementsClient(cordova.getActivity());
-                achievementsClient.increment(achievementId, count)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callbackContext.success();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            callbackContext.error("Error incrementing achievement: " + e.getMessage());
-                        }
-                    });
+                PlayGames.getAchievementsClient(cordova.getActivity()).increment(achievementId, count);
+                callbackContext.success();
             }
         });
     }
 
     /**
-     * Reveal achievement for current user
+     * Reveal an achievement
+     * Note: This is a fire-and-forget operation in v2.
      */
     private void revealAchievementAction(String achievementId, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                AchievementsClient achievementsClient = PlayGames.getAchievementsClient(cordova.getActivity());
-                achievementsClient.reveal(achievementId)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callbackContext.success();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            callbackContext.error("Error revealing achievement: " + e.getMessage());
-                        }
-                    });
+                PlayGames.getAchievementsClient(cordova.getActivity()).reveal(achievementId);
+                callbackContext.success();
             }
         });
     }
@@ -608,52 +575,28 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Set steps in achievement
+     * Set steps in an achievement
+     * Note: This is a fire-and-forget operation in v2.
      */
     private void setStepsInAchievementAction(String achievementId, int count, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                AchievementsClient achievementsClient = PlayGames.getAchievementsClient(cordova.getActivity());
-                achievementsClient.setSteps(achievementId, count)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callbackContext.success();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            callbackContext.error("Error setting achievement steps: " + e.getMessage());
-                        }
-                    });
+                PlayGames.getAchievementsClient(cordova.getActivity()).setSteps(achievementId, count);
+                callbackContext.success();
             }
         });
     }
 
     /**
      * Submit a score to a leaderboard using v2 API.
-     * Uses the modern Leaderboards client with proper success/failure callbacks.
-     * 
-     * Note: Uses Java 7 compatible code with anonymous classes for callbacks.
+     * Uses the modern Leaderboards client.
+     * Note: This is a fire-and-forget operation in v2.
      */
     private void updatePlayerScoreAction(String leaderboardId, Integer score, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                LeaderboardsClient leaderboardsClient = PlayGames.getLeaderboardsClient(cordova.getActivity());
-                leaderboardsClient.submitScore(leaderboardId, score)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callbackContext.success();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            callbackContext.error("Error submitting score: " + e.getMessage());
-                        }
-                    });
+                PlayGames.getLeaderboardsClient(cordova.getActivity()).submitScore(leaderboardId, score);
+                callbackContext.success();
             }
         });
     }
@@ -666,7 +609,7 @@ public class GPGS extends CordovaPlugin {
             @Override
             public void run() {
                 LeaderboardsClient leaderboardsClient = PlayGames.getLeaderboardsClient(cordova.getActivity());
-                leaderboardsClient.loadCurrentPlayerLeaderboardScore(leaderboardId, LeaderboardsClient.TIME_SPAN_ALL_TIME, LeaderboardsClient.COLLECTION_PUBLIC)
+                leaderboardsClient.loadCurrentPlayerLeaderboardScore(leaderboardId, LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC)
                     .addOnSuccessListener(new OnSuccessListener<AnnotatedData<LeaderboardScore>>() {
                         @Override
                         public void onSuccess(AnnotatedData<LeaderboardScore> scoreData) {
@@ -1128,13 +1071,13 @@ public class GPGS extends CordovaPlugin {
     }
 
     /**
-     * Set value for user event
+     * Increment an event
+     * Note: This is a fire-and-forget operation in v2.
      */
     private void incrementEventAction(String id, int amount, final CallbackContext callbackContext) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                EventsClient eventsClient = PlayGames.getEventsClient(cordova.getActivity());
-                eventsClient.increment(id, amount);
+                PlayGames.getEventsClient(cordova.getActivity()).increment(id, amount);
                 callbackContext.success();
             }
         });

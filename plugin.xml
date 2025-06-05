@@ -48,7 +48,10 @@
         </config-file>
 
         <!-- Google Play Games Services v2 API -->
+        <!-- While this plugin uses the v2 API, some clients (like PlayerStatsClient) still reside in the original 'play-services-games' library. -->
+        <!-- This is a known requirement for using the full feature set of the Google Play Games Services. -->
         <framework src="com.google.android.gms:play-services-games-v2:+" />
+        <framework src="com.google.android.gms:play-services-games:+" />
         <framework src="com.google.android.gms:play-services-auth:+" />
 
         <source-file src="src/android/GPGS.java"
