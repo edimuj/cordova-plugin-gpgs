@@ -39,8 +39,6 @@ out/
 hooks/
 config.xml
 res/
-www/
-!www/index.html
 
 # Test coverage
 coverage/
