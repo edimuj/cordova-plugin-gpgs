@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-gpgs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Modern Cordova plugin for Google Play Games Services v2 API with comprehensive gaming features",
   "main": "./www/gpgs.js",
   "repository": {

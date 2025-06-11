@@ -21,12 +21,15 @@ A modern Cordova plugin for Google Play Games Services v2 API with comprehensive
   - Show achievements UI
   - Reveal hidden achievements
   - Set achievement steps
+  - Load all achievements
 - **Cloud Saves**
   - Save game data
   - Load game data
   - Show saved games UI
   - Conflict resolution
   - Snapshot management
+  - Delete a snapshot
+  - Load all snapshots
 - **Friends**
   - Get friends list
   - Show player profiles
@@ -79,59 +82,54 @@ Add the following to your `config.xml`:
 
 ### Initialization
 
-The plugin automatically initializes when your app starts. It will:
-1. Check if Google Play Services are available
-2. Attempt silent sign-in if services are available
-3. Emit events for sign-in status and service availability
+Call `initialize()` once after `deviceready`. It performs a silent sign-in and fires the usual events (`gpgs.signin`, `gpgs.signout`, `gpgs.availability`). All Play Games API calls that require authentication should be made after the `gpgs.signin` event has fired.
 
 ```javascript
-// Listen for sign-in events
-document.addEventListener('gpgs.signin', function(event) {
-    const data = event.detail;
-    if (data.isSignedIn) {
-        console.log('User is signed in');
-        // Enable game features
-    } else {
-        console.log('Sign-in failed:', data.error);
-        // Show sign-in button or handle error
-    }
-});
-
-// Listen for sign-out events (including background sign-out)
-document.addEventListener('gpgs.signout', function(event) {
-    const data = event.detail;
-    console.log('User signed out:', data.reason);
-    // Disable game features that require sign-in
-    // Show sign-in button
-});
-
-// Listen for Google Play Services availability
-document.addEventListener('gpgs.availability', function(event) {
-    const data = event.detail;
-    if (data.available) {
-        console.log('Google Play Services are available');
-    } else {
-        console.log('Google Play Services are not available:', data.errorString);
-        if (data.isUserResolvable) {
-            // Show UI to help user resolve the issue
-            console.log('This issue can be resolved by the user');
-        }
-    }
+document.addEventListener('deviceready', () => {
+    GPGS.initialize()
+        .then(() => {
+            console.log('GPGS initialization request sent');
+        })
+        .catch(console.error);
 });
 ```
+
+The plugin NO LONGER attempts silent sign-in automatically; you are in full control of when the operation happens.
 
 ### Authentication
 
 ```javascript
-// Check if user is signed in
-GPGS.isSignedIn().then(isSignedIn => {
-    if (isSignedIn) {
-        console.log('User is signed in');
-    } else {
-        console.log('User is not signed in');
+// Check if Google Play Services are available
+GPGS.isGooglePlayServicesAvailable().then(result => {
+    if (result === true) {
+        console.log('Google Play Services are available');
+    } else if (typeof result === 'object') {
+        console.log('Google Play Services are not available:', result.errorString);
+        if (result.isUserResolvable) {
+            // Show UI to help user resolve the issue
+        }
     }
 });
-// Returns: Promise<boolean>
+// Returns: Promise<boolean|Object> - If services are not available, returns an object with:
+// {
+//   available: false,
+//   errorCode: number,
+//   errorString: string,
+//   isUserResolvable: boolean
+// }
+
+// Check if user is signed in
+GPGS.isSignedIn().then(result => {
+    if (typeof result === 'object') {
+        console.log('Sign-in status:', result.isSignedIn);
+    } else {
+        console.log('Sign-in status:', result);
+    }
+});
+// Returns: Promise<boolean|Object> - Returns either a boolean or an object with:
+// {
+//   isSignedIn: boolean
+// }
 
 // Manual sign-in
 GPGS.login().then(() => {
@@ -157,16 +155,46 @@ GPGS.showLeaderboard('leaderboard_id').then(() => {
 });
 // Returns: Promise<void>
 
+// Show all leaderboards
+GPGS.showAllLeaderboards().then(() => {
+    console.log('All leaderboards shown');
+});
+// Returns: Promise<void>
+
 // Get player's score
 GPGS.getPlayerScore('leaderboard_id').then(score => {
     console.log('Player score:', score);
 });
 // Returns: Promise<{
-//   score: number,
-//   displayScore: string,
-//   scoreTag: string,
-//   rank: number
+//   player_score: number,
+//   player_rank: number
 // }>
+
+// Load top scores for a leaderboard
+GPGS.loadTopScores('leaderboard_id', 2, 0, 25).then(result => {
+    console.log('Leaderboard:', result.leaderboard);
+    console.log('Scores:', result.scores);
+});
+// Returns: Promise<Object>
+
+// Load scores centered around the player
+GPGS.loadPlayerCenteredScores('leaderboard_id', 2, 0, 25).then(result => {
+    console.log('Leaderboard:', result.leaderboard);
+    console.log('Scores:', result.scores);
+});
+// Returns: Promise<Object>
+
+// Load metadata for a single leaderboard
+GPGS.loadLeaderboardMetadata('leaderboard_id').then(metadata => {
+    console.log('Leaderboard Metadata:', metadata);
+});
+// Returns: Promise<Object>
+
+// Load metadata for all leaderboards
+GPGS.loadLeaderboardMetadata().then(metadata => {
+    console.log('All Leaderboards Metadata:', metadata);
+});
+// Returns: Promise<Array<Object>>
 ```
 
 ### Achievements
@@ -201,13 +229,40 @@ GPGS.setStepsInAchievement('achievement_id', 5).then(() => {
     console.log('Achievement steps set');
 });
 // Returns: Promise<void>
+
+// Load all achievements
+GPGS.loadAchievements(false).then(achievements => {
+    console.log('Achievements:', achievements);
+});
+// Returns: Promise<Array<Object>>
+
+// Get friends list
+GPGS.getFriendsList().then(friends => {
+    console.log('Friends:', friends);
+});
+// Returns: Promise<Array<{
+//   id: string,
+//   displayName: string
+// }>>
+
+// Show player profile
+GPGS.showPlayerProfile('player_id').then(() => {
+    console.log('Player profile shown');
+});
+// Returns: Promise<void>
+
+// Show player search
+GPGS.showPlayerSearch().then(() => {
+    console.log('Player search shown');
+});
+// Returns: Promise<void>
 ```
 
 ### Cloud Saves
 
 ```javascript
 // Save game data
-GPGS.saveGame('save_name', {
+GPGS.saveGame('save_name', 'description', {
     level: 1,
     score: 1000
 }).then(() => {
@@ -231,55 +286,25 @@ GPGS.showSavedGames({
     console.log('Saved games UI shown');
 });
 // Returns: Promise<void>
-```
 
-### Friends
-
-```javascript
-// Get friends list
-GPGS.getFriendsList().then(friends => {
-    console.log('Friends:', friends);
+// Delete a snapshot
+GPGS.deleteSnapshot('save_name').then(snapshotId => {
+    console.log('Snapshot deleted:', snapshotId);
 });
-// Returns: Promise<Array<{
-//   id: string,
-//   name: string,
-//   title: string,
-//   retrievedTimestamp: number,
-//   bannerImageLandscapeUri?: string,
-//   bannerImagePortraitUri?: string,
-//   iconImageUri?: string,
-//   hiResImageUri?: string,
-//   iconImageBase64?: string,
-//   levelInfo?: {
-//     currentLevel: number,
-//     maxXp: number,
-//     minXp: number,
-//     hashCode: number
-//   },
-//   currentPlayerInfo?: {
-//     friendsListVisibilityStatus: number
-//   },
-//   friendStatus?: number
-// }>>
+// Returns: Promise<string>
 
-// Show player profile
-GPGS.showPlayerProfile('player_id').then(() => {
-    console.log('Player profile shown');
+// Load all snapshots
+GPGS.loadAllSnapshots(false).then(snapshots => {
+    console.log('All snapshots:', snapshots);
 });
-// Returns: Promise<void>
-
-// Show player search
-GPGS.showPlayerSearch().then(() => {
-    console.log('Player search shown');
-});
-// Returns: Promise<void>
+// Returns: Promise<Array<Object>>
 ```
 
 ### Player Stats
 
 ```javascript
 // Get player info
-GPGS.getPlayerInfo('player_id').then(info => {
+GPGS.getPlayerInfo('player_id', true).then(info => {
     console.log('Player info:', info);
 });
 // Returns: Promise<{
@@ -376,21 +401,21 @@ Emitted when Google Play Services availability changes.
 ## Error Handling
 
 The plugin uses promises for all operations. Errors are passed to the catch handler:
-
 ```javascript
 GPGS.login().catch(error => {
-    console.error('Error:', error);
+    console.error('Error:', error.message, 'Status Code:', error.statusCode);
 });
 ```
 
-Common error codes:
-- `ERROR_CODE_HAS_RESOLUTION`: The error can be resolved by the user
-- `ERROR_CODE_NO_RESOLUTION`: The error cannot be resolved by the user
+The error object contains:
+- `message`: A descriptive error message
+- `statusCode`: The status code from the underlying Google Play Games SDK (if available)
+
+Common error codes from the SDK can be found in the official documentation.
 
 ## Debug Mode
 
 Enable debug mode in `config.xml` to see detailed logs:
-
 ```xml
 <preference name="GPGS_DEBUG" value="true" />
 ```

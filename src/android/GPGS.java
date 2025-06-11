@@ -18,28 +18,17 @@
 
 package com.exelerus.cordova.plugin;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.util.Log;
-import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.games.AchievementsClient;
 import com.google.android.gms.games.AnnotatedData;
 import com.google.android.gms.games.AuthenticationResult;
 import com.google.android.gms.games.EventsClient;
 import com.google.android.gms.games.GamesSignInClient;
-import com.google.android.gms.games.LeaderboardsClient;
 import com.google.android.gms.games.PlayGames;
 import com.google.android.gms.games.PlayGamesSdk;
 import com.google.android.gms.games.Player;
@@ -48,7 +37,10 @@ import com.google.android.gms.games.PlayersClient;
 import com.google.android.gms.games.SnapshotsClient;
 import com.google.android.gms.games.event.Event;
 import com.google.android.gms.games.event.EventBuffer;
+import com.google.android.gms.games.leaderboard.Leaderboard;
+import com.google.android.gms.games.leaderboard.LeaderboardBuffer;
 import com.google.android.gms.games.leaderboard.LeaderboardScore;
+import com.google.android.gms.games.leaderboard.LeaderboardScoreBuffer;
 import com.google.android.gms.games.leaderboard.LeaderboardVariant;
 import com.google.android.gms.games.snapshot.Snapshot;
 import com.google.android.gms.games.snapshot.SnapshotMetadata;
@@ -67,9 +59,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
 public class GPGS extends CordovaPlugin {
 
@@ -82,13 +72,8 @@ public class GPGS extends CordovaPlugin {
     private static final int RC_SAVED_GAMES = 9009;
     private static final int RC_SHOW_PROFILE = 9010;
     private static final int RC_SHOW_PLAYER_SEARCH = 9011;
-    private static final int SHOW_SHARING_FRIENDS_CONSENT = 1111;
     private static final int RC_SIGN_IN = 9012;
 
-    private static final String EVENT_LOAD_SAVED_GAME_REQUEST = "loadSavedGameRequest";
-    private static final String EVENT_SAVE_GAME_REQUEST = "saveGameRequest";
-    private static final String EVENT_SAVE_GAME_CONFLICT = "saveGameConflict";
-    private static final String EVENT_FRIENDS_LIST_REQUEST_SUCCESSFUL = "friendsListRequestSuccessful";
     private static final String EVENT_SIGN_IN = "gpgs.signin";
     private static final String EVENT_SIGN_OUT = "gpgs.signout";
     private static final String EVENT_AVAILABILITY = "gpgs.availability";
@@ -213,6 +198,11 @@ public class GPGS extends CordovaPlugin {
             return true;
         }
 
+        else if (action.equals("loadAchievements")) {
+            this.loadAchievementsAction(args.getBoolean(0), callbackContext);
+            return true;
+        }
+
         else if (action.equals("updatePlayerScore")) {
             this.updatePlayerScoreAction(args.getString(0), args.getInt(1), callbackContext);
             return true;
@@ -233,6 +223,25 @@ public class GPGS extends CordovaPlugin {
             return true;
         }
 
+        else if (action.equals("loadTopScores")) {
+            this.loadTopScoresAction(args.getString(0), args.getInt(1), args.getInt(2), args.getInt(3), callbackContext);
+            return true;
+        }
+
+        else if (action.equals("loadPlayerCenteredScores")) {
+            this.loadPlayerCenteredScoresAction(args.getString(0), args.getInt(1), args.getInt(2), args.getInt(3), callbackContext);
+            return true;
+        }
+
+        else if (action.equals("loadLeaderboardMetadata")) {
+            if (args.length() > 0) {
+                this.loadLeaderboardMetadataAction(args.getString(0), callbackContext);
+            } else {
+                this.loadAllLeaderboardsMetadataAction(callbackContext);
+            }
+            return true;
+        }
+
         else if (action.equals("showSavedGames")) {
             this.showSavedGamesAction(args.getString(0), args.getBoolean(1), args.getBoolean(2), args.getInt(3), callbackContext);
             return true;
@@ -245,6 +254,16 @@ public class GPGS extends CordovaPlugin {
 
         else if (action.equals("loadGameSave")) {
             this.loadGameSaveAction(args.getString(0), callbackContext);
+            return true;
+        }
+
+        else if (action.equals("deleteSnapshot")) {
+            this.deleteSnapshotAction(args.getString(0), callbackContext);
+            return true;
+        }
+
+        else if (action.equals("loadAllSnapshots")) {
+            this.loadAllSnapshotsAction(args.getBoolean(0), callbackContext);
             return true;
         }
 
@@ -264,7 +283,7 @@ public class GPGS extends CordovaPlugin {
         }
 
         else if (action.equals("getPlayer")) {
-            this.getPlayerAction(args.getString(0), args.getBoolean(1), callbackContext);
+            this.getPlayerAction(args.getString(0), args.length() > 1 && args.getBoolean(1), callbackContext);
             return true;
         }
 
@@ -275,6 +294,11 @@ public class GPGS extends CordovaPlugin {
 
         else if (action.equals("getEvent")) {
             this.getEventAction(args.getString(0), callbackContext);
+            return true;
+        }
+
+        else if (action.equals("initialize")) {
+            this.initializeAction(callbackContext);
             return true;
         }
 
@@ -415,6 +439,42 @@ public class GPGS extends CordovaPlugin {
             public void run() {
                 PlayGames.getAchievementsClient(cordova.getActivity()).setSteps(achievementId, count);
                 callbackContext.success();
+            }
+        });
+    }
+
+    private void loadAchievementsAction(boolean forceReload, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayGames.getAchievementsClient(cordova.getActivity())
+                        .load(forceReload)
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<AchievementBuffer>>() {
+                            @Override
+                            public void onSuccess(AnnotatedData<AchievementBuffer> data) {
+                                AchievementBuffer achievementBuffer = data.get();
+                                if (achievementBuffer == null) {
+                                    callbackContext.success(new JSONArray());
+                                    return;
+                                }
+                                try {
+                                    JSONArray result = new JSONArray();
+                                    for (Achievement achievement : achievementBuffer) {
+                                        result.put(convertAchievementToJson(achievement));
+                                    }
+                                    achievementBuffer.release();
+                                    callbackContext.success(result);
+                                } catch (JSONException e) {
+                                    handleError(e, callbackContext);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
             }
         });
     }
@@ -879,10 +939,323 @@ public class GPGS extends CordovaPlugin {
     }
 
     private void handleError(Exception e, CallbackContext callbackContext) {
-        String msg = "GPGS Error: " + e.getMessage();
-        debugLog(msg, e);
-        if (callbackContext != null) {
-            callbackContext.error(msg);
+        if (callbackContext == null) {
+            debugLog("GPGS Error: " + e.getMessage(), e);
+            return;
         }
+
+        try {
+            JSONObject error = new JSONObject();
+            error.put("message", e.getMessage());
+
+            if (e instanceof com.google.android.gms.common.api.ApiException) {
+                com.google.android.gms.common.api.ApiException apiException = (com.google.android.gms.common.api.ApiException) e;
+                error.put("statusCode", apiException.getStatusCode());
+            }
+
+            callbackContext.error(error);
+        } catch (JSONException jsonException) {
+            callbackContext.error("{\"message\": \"" + e.getMessage() + "\", \"originalException\": \"" + jsonException.getMessage() + "\"}");
+        }
+
+        debugLog("GPGS Error: " + e.getMessage(), e);
+    }
+
+    private JSONObject convertAchievementToJson(Achievement achievement) throws JSONException {
+        if (achievement == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("achievementId", achievement.getAchievementId());
+        json.put("name", achievement.getName());
+        json.put("description", achievement.getDescription());
+        json.put("type", achievement.getType());
+        json.put("state", achievement.getState());
+        json.put("xpValue", achievement.getXpValue());
+        json.put("lastUpdatedTimestamp", achievement.getLastUpdatedTimestamp());
+        json.put("revealedImageUri", achievement.getRevealedImageUri() != null ? achievement.getRevealedImageUri().toString() : null);
+        json.put("unlockedImageUri", achievement.getUnlockedImageUri() != null ? achievement.getUnlockedImageUri().toString() : null);
+        if (achievement.getType() == Achievement.TYPE_INCREMENTAL) {
+            json.put("currentSteps", achievement.getCurrentSteps());
+            json.put("totalSteps", achievement.getTotalSteps());
+        }
+        return json;
+    }
+
+    private JSONObject convertLeaderboardToJson(Leaderboard leaderboard) throws JSONException {
+        if (leaderboard == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("leaderboardId", leaderboard.getLeaderboardId());
+        json.put("displayName", leaderboard.getDisplayName());
+        json.put("iconImageUri", leaderboard.getIconImageUri() != null ? leaderboard.getIconImageUri().toString() : null);
+        json.put("scoreOrder", leaderboard.getScoreOrder());
+        return json;
+    }
+
+    private JSONObject convertLeaderboardScoreToJson(LeaderboardScore score) throws JSONException {
+        if (score == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("rank", score.getRank());
+        json.put("displayRank", score.getDisplayRank());
+        json.put("rawScore", score.getRawScore());
+        json.put("displayScore", score.getDisplayScore());
+        json.put("timestampMillis", score.getTimestampMillis());
+        if (score.getScoreHolder() != null) {
+            json.put("scoreHolder", convertPlayerToJson(score.getScoreHolder()));
+        }
+        return json;
+    }
+
+    private JSONObject convertLoadScoresResultToJson(Leaderboards.LoadScoresResult result) throws JSONException {
+        if (result == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("leaderboard", convertLeaderboardToJson(result.getLeaderboard()));
+        JSONArray scores = new JSONArray();
+        LeaderboardScoreBuffer buffer = result.getScores();
+        if (buffer != null) {
+            for (LeaderboardScore score : buffer) {
+                scores.put(convertLeaderboardScoreToJson(score));
+            }
+            buffer.release();
+        }
+        json.put("scores", scores);
+        return json;
+    }
+
+    private JSONObject convertSnapshotMetadataToJson(SnapshotMetadata metadata) throws JSONException {
+        if (metadata == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("snapshotId", metadata.getSnapshotId());
+        json.put("uniqueName", metadata.getUniqueName());
+        json.put("title", metadata.getGame().getDisplayName());
+        json.put("description", metadata.getDescription());
+        json.put("lastModifiedTimestamp", metadata.getLastModifiedTimestamp());
+        json.put("playedTime", metadata.getPlayedTime());
+        json.put("coverImageUri", metadata.getCoverImageUri() != null ? metadata.getCoverImageUri().toString() : null);
+        return json;
+    }
+
+    private JSONObject convertPlayerToJson(Player player) throws JSONException {
+        if (player == null) return null;
+        JSONObject json = new JSONObject();
+        json.put("id", player.getPlayerId());
+        json.put("displayName", player.getDisplayName());
+        json.put("iconImageUri", player.getIconImageUri() != null ? player.getIconImageUri().toString() : null);
+        json.put("hiResImageUri", player.getHiResImageUri() != null ? player.getHiResImageUri().toString() : null);
+        json.put("title", player.getTitle());
+        if (player.getLevelInfo() != null) {
+            JSONObject levelInfo = new JSONObject();
+            levelInfo.put("currentLevel", player.getLevelInfo().getCurrentLevel().getLevelNumber());
+            levelInfo.put("currentXp", player.getLevelInfo().getCurrentXp());
+            levelInfo.put("lastLevelUpTimestamp", player.getLevelInfo().getLastLevelUpTimestamp());
+            json.put("levelInfo", levelInfo);
+        }
+        return json;
+    }
+
+    private void loadTopScoresAction(String leaderboardId, int timeSpan, int collection, int maxResults, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayGames.getLeaderboardsClient(cordova.getActivity())
+                        .loadTopScores(leaderboardId, timeSpan, collection, maxResults)
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<Leaderboards.LoadScoresResult>>() {
+                            @Override
+                            public void onSuccess(AnnotatedData<Leaderboards.LoadScoresResult> data) {
+                                try {
+                                    callbackContext.success(convertLoadScoresResultToJson(data.get()));
+                                } catch (JSONException e) {
+                                    handleError(e, callbackContext);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
+            }
+        });
+    }
+
+    private void loadPlayerCenteredScoresAction(String leaderboardId, int timeSpan, int collection, int maxResults, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayGames.getLeaderboardsClient(cordova.getActivity())
+                        .loadPlayerCenteredScores(leaderboardId, timeSpan, collection, maxResults)
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<Leaderboards.LoadScoresResult>>() {
+                            @Override
+                            public void onSuccess(AnnotatedData<Leaderboards.LoadScoresResult> data) {
+                                try {
+                                    callbackContext.success(convertLoadScoresResultToJson(data.get()));
+                                } catch (JSONException e) {
+                                    handleError(e, callbackContext);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
+            }
+        });
+    }
+
+    private void loadAllLeaderboardsMetadataAction(final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayGames.getLeaderboardsClient(cordova.getActivity())
+                        .loadLeaderboardMetadata(false)
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<LeaderboardBuffer>>() {
+                            @Override
+                            public void onSuccess(AnnotatedData<LeaderboardBuffer> data) {
+                                LeaderboardBuffer buffer = data.get();
+                                if (buffer == null) {
+                                    callbackContext.success(new JSONArray());
+                                    return;
+                                }
+                                try {
+                                    JSONArray result = new JSONArray();
+                                    for (Leaderboard leaderboard : buffer) {
+                                        result.put(convertLeaderboardToJson(leaderboard));
+                                    }
+                                    buffer.release();
+                                    callbackContext.success(result);
+                                } catch (JSONException e) {
+                                    handleError(e, callbackContext);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
+            }
+        });
+    }
+
+    private void loadLeaderboardMetadataAction(String leaderboardId, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayGames.getLeaderboardsClient(cordova.getActivity())
+                        .loadLeaderboardMetadata(leaderboardId, false)
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<Leaderboard>>() {
+                            @Override
+                            public void onSuccess(AnnotatedData<Leaderboard> data) {
+                                Leaderboard leaderboard = data.get();
+                                if (leaderboard == null) {
+                                    callbackContext.error("Leaderboard not found.");
+                                    return;
+                                }
+                                try {
+                                    callbackContext.success(convertLeaderboardToJson(leaderboard));
+                                } catch (JSONException e) {
+                                    handleError(e, callbackContext);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
+            }
+        });
+    }
+
+    private void deleteSnapshotAction(String snapshotName, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                SnapshotsClient snapshotsClient = PlayGames.getSnapshotsClient(cordova.getActivity());
+                snapshotsClient.open(snapshotName, false)
+                        .addOnSuccessListener(new OnSuccessListener<SnapshotsClient.DataOrConflict<Snapshot>>() {
+                            @Override
+                            public void onSuccess(SnapshotsClient.DataOrConflict<Snapshot> dataOrConflict) {
+                                if (dataOrConflict.isConflict()) {
+                                    callbackContext.error("Snapshot conflict. Cannot delete.");
+                                    return;
+                                }
+                                Snapshot snapshot = dataOrConflict.getData();
+                                if (snapshot == null) {
+                                    callbackContext.error("Snapshot not found.");
+                                    return;
+                                }
+                                snapshotsClient.delete(snapshot.getMetadata())
+                                        .addOnSuccessListener(new OnSuccessListener<String>() {
+                                            @Override
+                                            public void onSuccess(String s) {
+                                                callbackContext.success(s);
+                                            }
+                                        })
+                                        .addOnFailureListener(new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                handleError(e, callbackContext);
+                                            }
+                                        });
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
+            }
+        });
+    }
+
+    private void loadAllSnapshotsAction(boolean forceReload, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayGames.getSnapshotsClient(cordova.getActivity())
+                        .load(forceReload)
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<SnapshotMetadataBuffer>>() {
+                            @Override
+                            public void onSuccess(AnnotatedData<SnapshotMetadataBuffer> data) {
+                                SnapshotMetadataBuffer buffer = data.get();
+                                if (buffer == null) {
+                                    callbackContext.success(new JSONArray());
+                                    return;
+                                }
+                                try {
+                                    JSONArray result = new JSONArray();
+                                    for (SnapshotMetadata metadata : buffer) {
+                                        result.put(convertSnapshotMetadataToJson(metadata));
+                                    }
+                                    buffer.release();
+                                    callbackContext.success(result);
+                                } catch (JSONException e) {
+                                    handleError(e, callbackContext);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                handleError(e, callbackContext);
+                            }
+                        });
+            }
+        });
+    }
+
+    private void initializeAction(final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                signInSilently();
+                callbackContext.success();
+            }
+        });
     }
 } 
