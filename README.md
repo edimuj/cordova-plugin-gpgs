@@ -5,7 +5,7 @@ A modern Cordova plugin for Google Play Games Services v2 API with comprehensive
 ## Features
 
 - **Authentication**
-  - Automatic silent sign-in on startup
+  - Manual silent sign-in via initialize()
   - Background sign-out detection
   - Manual sign-in support
   - Sign-in state events
@@ -44,13 +44,6 @@ A modern Cordova plugin for Google Play Games Services v2 API with comprehensive
   - Get event data
   - Get all events
   - Event tracking
-- **Quests & Milestones**
-  - Track quest progress
-  - Manage milestones
-- **Challenges**
-  - Create challenges
-  - Accept challenges
-  - Track challenge progress
 
 ## Requirements
 
@@ -88,7 +81,7 @@ Call `initialize()` once after `deviceready`. It performs a silent sign-in and f
 document.addEventListener('deviceready', () => {
     GPGS.initialize()
         .then(() => {
-            console.log('GPGS initialization request sent');
+            console.log('GPGS initialization request sent');        
         })
         .catch(console.error);
 });

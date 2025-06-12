@@ -113,7 +113,7 @@ public class GPGS extends CordovaPlugin {
                                 boolean isAuthenticated = task.getResult().isAuthenticated();
                                 if (isAuthenticated) {
                                     wasSignedIn = true;
-                                    emitWindowEvent(EVENT_SIGN_IN);
+                                    emitSignInEvent(true);
                                     debugLog("GPGS - Already signed in.");
                                 } else {
                                     wasSignedIn = false;
@@ -149,11 +149,11 @@ public class GPGS extends CordovaPlugin {
                             boolean isAuthenticated = task.getResult().isAuthenticated();
                             if (!wasSignedIn && isAuthenticated) {
                                 wasSignedIn = true;
-                                emitWindowEvent(EVENT_SIGN_IN);
+                                emitSignInEvent(true);
                                 debugLog("GPGS - Signed in on resume.");
                             } else if (wasSignedIn && !isAuthenticated) {
                                 wasSignedIn = false;
-                                emitWindowEvent(EVENT_SIGN_OUT);
+                                emitSignOutEvent("background_signout");
                                 debugLog("GPGS - Signed out on resume.");
                             }
                         } else {
@@ -310,6 +310,11 @@ public class GPGS extends CordovaPlugin {
             return true;
         }
 
+        else if (action.equals("incrementEvent")) {
+            this.incrementEventAction(args.getString(0), args.getInt(1), callbackContext);
+            return true;
+        }
+
         return false;
     }
 
@@ -350,13 +355,22 @@ public class GPGS extends CordovaPlugin {
                     public void onComplete(@NonNull Task<AuthenticationResult> task) {
                         if (task.isSuccessful()) {
                             wasSignedIn = true;
-                            emitWindowEvent(EVENT_SIGN_IN);
+                            emitSignInEvent(true);
                             debugLog("GPGS - Sign in successful (silently).");
                         } else {
                             Exception e = task.getException();
                             if (e instanceof ApiException && ((ApiException) e).getStatusCode() == com.google.android.gms.common.api.CommonStatusCodes.SIGN_IN_REQUIRED) {
                                 debugLog("GPGS - Silent sign in failed, needs manual sign in.");
-                            } else {
+                            }
+                            // Always notify listeners about the failed attempt
+                            try {
+                                JSONObject payload = new JSONObject();
+                                payload.put("isSignedIn", false);
+                                if (e != null) payload.put("error", e.getMessage());
+                                emitWindowEvent(EVENT_SIGN_IN, payload);
+                            } catch (JSONException ignored) {}
+
+                            if (e != null && !(e instanceof ApiException && ((ApiException) e).getStatusCode() == com.google.android.gms.common.api.CommonStatusCodes.SIGN_IN_REQUIRED)) {
                                 handleError(e, null);
                             }
                         }
@@ -377,7 +391,7 @@ public class GPGS extends CordovaPlugin {
                         public void onComplete(@NonNull Task<AuthenticationResult> task) {
                             if (task.isSuccessful()) {
                                 wasSignedIn = true;
-                                emitWindowEvent(EVENT_SIGN_IN);
+                                emitSignInEvent(true);
                                 callbackContext.success();
                             } else {
                                 handleError(task.getException(), callbackContext);
@@ -1262,8 +1276,44 @@ public class GPGS extends CordovaPlugin {
             @Override
             public void run() {
                 signInSilently();
+                // Emit current Play-Services availability immediately.
+                emitAvailabilityEvent();
                 callbackContext.success();
             }
         });
+    }
+
+    // Helper: emit sign-in event with detail { isSignedIn: boolean }
+    private void emitSignInEvent(boolean isSignedIn) {
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("isSignedIn", isSignedIn);
+            emitWindowEvent(EVENT_SIGN_IN, payload);
+        } catch (JSONException ignored) { }
+    }
+
+    // Helper: emit sign-out event with detail { reason: string }
+    private void emitSignOutEvent(String reason) {
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("reason", reason);
+            emitWindowEvent(EVENT_SIGN_OUT, payload);
+        } catch (JSONException ignored) { }
+    }
+
+    // Helper: emit availability event with detailed status object
+    private void emitAvailabilityEvent() {
+        try {
+            GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+            int status = apiAvailability.isGooglePlayServicesAvailable(cordova.getActivity());
+            JSONObject payload = new JSONObject();
+            payload.put("available", status == ConnectionResult.SUCCESS);
+            if (status != ConnectionResult.SUCCESS) {
+                payload.put("errorCode", status);
+                payload.put("errorString", apiAvailability.getErrorString(status));
+                payload.put("isUserResolvable", apiAvailability.isUserResolvableError(status));
+            }
+            emitWindowEvent(EVENT_AVAILABILITY, payload);
+        } catch (Exception ignored) { }
     }
 } 
