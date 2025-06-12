@@ -25,6 +25,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.games.AnnotatedData;
 import com.google.android.gms.games.AuthenticationResult;
 import com.google.android.gms.games.EventsClient;
@@ -45,6 +47,8 @@ import com.google.android.gms.games.leaderboard.LeaderboardVariant;
 import com.google.android.gms.games.snapshot.Snapshot;
 import com.google.android.gms.games.snapshot.SnapshotMetadata;
 import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
+import com.google.android.gms.games.snapshot.SnapshotMetadataBuffer;
+import com.google.android.gms.games.PlayerLevelInfo;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -60,6 +64,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
+
+import com.google.android.gms.games.achievement.Achievement;
+import com.google.android.gms.games.achievement.AchievementBuffer;
 
 public class GPGS extends CordovaPlugin {
 
@@ -1044,7 +1051,7 @@ public class GPGS extends CordovaPlugin {
         if (player.getLevelInfo() != null) {
             JSONObject levelInfo = new JSONObject();
             levelInfo.put("currentLevel", player.getLevelInfo().getCurrentLevel().getLevelNumber());
-            levelInfo.put("currentXp", player.getLevelInfo().getCurrentXp());
+            levelInfo.put("currentXp", player.getLevelInfo().getCurrentXpTotal());
             levelInfo.put("lastLevelUpTimestamp", player.getLevelInfo().getLastLevelUpTimestamp());
             json.put("levelInfo", levelInfo);
         }
