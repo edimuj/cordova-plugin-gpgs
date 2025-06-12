@@ -21,9 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Challenges system
 - Snapshots support
 - Promise-based API with async/await support
-- Full TypeScript support
 - Comprehensive documentation
-- Example project
 
 ### Changed
 
