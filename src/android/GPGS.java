@@ -67,6 +67,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.google.android.gms.games.achievement.Achievement;
 import com.google.android.gms.games.achievement.AchievementBuffer;
+import com.google.android.gms.games.LeaderboardsClient.LeaderboardScores;
 
 public class GPGS extends CordovaPlugin {
 
@@ -1011,7 +1012,7 @@ public class GPGS extends CordovaPlugin {
         return json;
     }
 
-    private JSONObject convertLoadScoresResultToJson(Leaderboards.LoadScoresResult result) throws JSONException {
+    private JSONObject convertLoadScoresResultToJson(LeaderboardScores result) throws JSONException {
         if (result == null) return null;
         JSONObject json = new JSONObject();
         json.put("leaderboard", convertLeaderboardToJson(result.getLeaderboard()));
@@ -1064,9 +1065,9 @@ public class GPGS extends CordovaPlugin {
             public void run() {
                 PlayGames.getLeaderboardsClient(cordova.getActivity())
                         .loadTopScores(leaderboardId, timeSpan, collection, maxResults)
-                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<Leaderboards.LoadScoresResult>>() {
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<LeaderboardScores>>() {
                             @Override
-                            public void onSuccess(AnnotatedData<Leaderboards.LoadScoresResult> data) {
+                            public void onSuccess(AnnotatedData<LeaderboardScores> data) {
                                 try {
                                     callbackContext.success(convertLoadScoresResultToJson(data.get()));
                                 } catch (JSONException e) {
@@ -1090,9 +1091,9 @@ public class GPGS extends CordovaPlugin {
             public void run() {
                 PlayGames.getLeaderboardsClient(cordova.getActivity())
                         .loadPlayerCenteredScores(leaderboardId, timeSpan, collection, maxResults)
-                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<Leaderboards.LoadScoresResult>>() {
+                        .addOnSuccessListener(new OnSuccessListener<AnnotatedData<LeaderboardScores>>() {
                             @Override
-                            public void onSuccess(AnnotatedData<Leaderboards.LoadScoresResult> data) {
+                            public void onSuccess(AnnotatedData<LeaderboardScores> data) {
                                 try {
                                     callbackContext.success(convertLoadScoresResultToJson(data.get()));
                                 } catch (JSONException e) {
