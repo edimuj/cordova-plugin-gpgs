@@ -26,7 +26,7 @@ const FRIENDS  = 1; // Social collection (= friends)
 ## 1. Submitting a Score
 
 ```javascript
-const score = 42_000;
+const score = 42000;
 GPGS.submitScore(LEADERBOARD_ID, score)
     .then(() => console.log('Score submitted!'))
     .catch(console.error);
