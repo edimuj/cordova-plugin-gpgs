@@ -163,15 +163,23 @@ GPGS.getPlayerScore('leaderboard_id').then(score => {
 //   player_rank: number
 // }>
 
+// --- Parameter enums ------------------------------------------------------
+// timeSpan   → 0 = daily, 1 = weekly, 2 = all-time
+// collection → 0 = public, 1 = friends
+// For richer code samples see: examples/scores.md
+
 // Load top scores for a leaderboard
-GPGS.loadTopScores('leaderboard_id', 2, 0, 25).then(result => {
+GPGS.loadTopScores('leaderboard_id', 2 /*all-time*/, 0 /*public*/, 25).then(result => {
     console.log('Leaderboard:', result.leaderboard);
     console.log('Scores:', result.scores);
 });
 // Returns: Promise<Object>
 
-// Load scores centered around the player
-GPGS.loadPlayerCenteredScores('leaderboard_id', 2, 0, 25).then(result => {
+// -------------------------------------------------------------------------
+// See examples/scores.md for showing a leaderboard slice around the player
+
+// Load scores centered around the signed-in player
+GPGS.loadPlayerCenteredScores('leaderboard_id', 2 /*all-time*/, 0 /*public*/, 25).then(result => {
     console.log('Leaderboard:', result.leaderboard);
     console.log('Scores:', result.scores);
 });
@@ -432,3 +440,4 @@ Exelerus AB - [https://exelerus.com](https://exelerus.com)
 ## Examples
 
 - [Listening to sign-in events](examples/events.md)
+- [Working with leaderboards & scores](examples/scores.md)

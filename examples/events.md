@@ -13,32 +13,30 @@ function onDeviceReady () {
     /* ----- 1. Register listeners BEFORE calling initialise() ----- */
 
     // Sign-in event
-    function onSignIn (event) {
-        const data = event.detail;
-        if (data.isSignedIn) {
+    function onSignIn (event) {        
+        if (event.isSignedIn) {
             console.log('[GPGS] Signed in ✅');
             enableGameFeatures();
         } else {
-            console.warn('[GPGS] Sign-in FAILED ❌', data.error);
+            console.warn('[GPGS] Sign-in FAILED ❌', event.error);
             showManualSignInButton();
         }
     }
     document.addEventListener('gpgs.signin', onSignIn);
 
     // Sign-out event
-    document.addEventListener('gpgs.signout', (e) => {
-        console.log('[GPGS] Signed out:', e.detail.reason);
+    document.addEventListener('gpgs.signout', (event) => {
+        console.log('[GPGS] Signed out:', event.reason);
         disableGameFeatures();
     });
 
     // Availability event
-    document.addEventListener('gpgs.availability', (e) => {
-        const info = e.detail;
-        if (info.available) {
+    document.addEventListener('gpgs.availability', (e) => {        
+        if (event.available) {
             console.log('[GPGS] Play-Services available ✅');
         } else {
-            console.warn('[GPGS] Play-Services unavailable ❌', info.errorString);
-            if (info.isUserResolvable) {
+            console.warn('[GPGS] Play-Services unavailable ❌', event.errorString);
+            if (event.isUserResolvable) {
                 // Prompt user to resolve (update / enable services)
             }
         }
